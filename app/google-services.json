@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "980589302012",
+    "firebase_url": "https://skilled-script-155921.firebaseio.com",
+    "project_id": "skilled-script-155921",
+    "storage_bucket": "skilled-script-155921.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:980589302012:android:785dc7eb40a796b7",
+        "android_client_info": {
+          "package_name": "com.romif.securityalarm.androidclient.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "980589302012-h2b9u6r8msed1b80suvujf7cgbg7qqvq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.romif.securityalarm.androidclient.app",
+            "certificate_hash": "a09b50fc1657df93b205d3703af8ace6746e5e73"
+          }
+        },
+        {
+          "client_id": "980589302012-nhfninj01jsqog0eahm5tvh2lfmrm7u1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0Drj6JvbkDG2uQur2kb24rtj0SwFzbko"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "980589302012-nhfninj01jsqog0eahm5tvh2lfmrm7u1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
