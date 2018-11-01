@@ -3,7 +3,6 @@ package com.romif.securityalarm.androidclient.feature;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -29,19 +28,16 @@ import java.util.concurrent.CompletableFuture;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final int DELAY_MILLIS = 3000;
     private static final String TAG = "MainActivity";
     private static final int RC_SAVE = 1;
     private static final int RC_READ = 3;
     private static final String IS_RESOLVING = "is_resolving";
     private static final String IS_REQUESTING = "is_requesting";
-    private static final String SPLASH_TAG = "splash_fragment";
     private static final String SIGN_IN_TAG = "sign_in_fragment";
     // Add mGoogleApiClient and mIsResolving fields here.
     private boolean mIsResolving;
     private boolean mIsRequesting;
     private Handler mHandler;
-    private GoogleApiClient mGoogleApiClient;
     private CredentialsClient mCredentialsClient;
     private Properties properties = new Properties();
     private AlertDialog enableNotificationListenerAlertDialog;
@@ -65,15 +61,9 @@ public class MainActivity extends AppCompatActivity {
             mIsRequesting = savedInstanceState.getBoolean(IS_REQUESTING);
         }
 
-        // When not using Smart Lock show set Fragment in onCreate.
-        //mHandler = new Handler();
-        //mHandler.postDelayed(() -> setFragment(null), DELAY_MILLIS);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            if (!NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName())) {        //ask for permission
-                Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
-                startActivity(intent);
-            }
+        if (!NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName())) {        //ask for permission
+            Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+            startActivity(intent);
         }
 
     }
@@ -88,42 +78,21 @@ public class MainActivity extends AppCompatActivity {
         super.onSaveInstanceState(savedInstanceState);
     }
 
-    @Override
-    public void onStop() {
-        //mHandler.removeCallbacksAndMessages(null);
-        super.onStop();
-    }
-
     /**
      * Set the appropriate fragment given the state of the Activity and the Intent used to start it.
      * If the intent is a launcher intent the Splash Fragment is shown otherwise the SignIn Fragment is shown.
      *
-     * @param intent Intent used to determine which Fragment is used.
      */
-    private void setFragment(Intent intent) {
+    private void setFragment() {
         Fragment fragment;
         String tag;
-        if (intent != null && (intent.hasCategory(Intent.CATEGORY_LAUNCHER) || intent.hasCategory(Intent.CATEGORY_BROWSABLE))) {
-            fragment = new SplashFragment();
-            tag = SPLASH_TAG;
-        } else {
-            fragment = new SignInFragment();
-            tag = SIGN_IN_TAG;
-        }
-        String currentTag = getCurrentFragmentTag();
-        if (currentTag == null || !currentTag.equals(tag)) {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, fragment, tag)
-                    .commit();
-        }
-    }
 
-    /**
-     * Start the Content Activity and finish this one.
-     */
-    protected void goToContent() {
-        startActivity(new Intent(this, ContentActivity.class));
-        finish();
+        fragment = new SignInFragment();
+        tag = SIGN_IN_TAG;
+
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment, tag)
+                .commit();
     }
 
     /**
@@ -155,15 +124,6 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
-    /**
-     * Check if the Splash Fragment is the currently selected Fragment.
-     *
-     * @return true if Splash Fragment is the current Fragment, false otherwise.
-     */
-    private boolean onSplashFragment() {
-        return getCurrentFragmentTag().equals(SPLASH_TAG);
-    }
-
     protected boolean isResolving() {
         return mIsResolving;
     }
@@ -176,8 +136,6 @@ public class MainActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         Log.d(TAG, "onStart");
-
-        setFragment(getIntent());
 
         setSignInEnabled(false);
         mIsRequesting = true;
@@ -246,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "Credential deleted");
                         setSignInEnabled(true);
-                        setFragment(null);
+                        setFragment();
                     }
                 });
     }
@@ -263,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
                 processRetrievedCredential(credential);
             } else {
                 Log.e(TAG, "Credential Read: NOT OK");
-                setFragment(null);
+                setFragment();
                 mIsResolving = false;
                 //Toast.makeText(this, "Credential Read Failed", Toast.LENGTH_SHORT).show();
             }
@@ -276,7 +234,8 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Log.e(TAG, "Credential Save Failed");
             }
-            goToContent();
+            startActivity(new Intent(this, ContentActivity.class));
+            finish();
             mIsResolving = false;
         }
 

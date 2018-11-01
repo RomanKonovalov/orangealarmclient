@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wialon_host">http://trc-api.wialon.com</string>
+</resources>

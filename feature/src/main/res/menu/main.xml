@@ -25,4 +25,10 @@
         android:title="@string/menu_settings"
         support:showAsAction="never"/>
 
+    <item
+        android:id="@+id/menu_logout"
+        android:icon="@drawable/ic_action_settings"
+        android:title="@string/sign_out_button_text"
+        support:showAsAction="never"/>
+
 </menu>

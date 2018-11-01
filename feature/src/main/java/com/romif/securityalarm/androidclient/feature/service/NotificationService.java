@@ -58,7 +58,6 @@ public class NotificationService {
 
         // This image is used as the notification's large icon (thumbnail).
         // TODO: Remove this if your notification has no relevant thumbnail.
-        final Bitmap picture = BitmapFactory.decodeResource(res, R.drawable.example_picture);
 
         final String title = res.getString(R.string.alarm_notification_title_template);
 

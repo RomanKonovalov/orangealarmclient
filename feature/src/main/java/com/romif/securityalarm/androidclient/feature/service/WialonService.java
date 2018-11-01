@@ -1,7 +1,5 @@
 package com.romif.securityalarm.androidclient.feature.service;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
 
@@ -37,12 +35,12 @@ import java.util.stream.Collectors;
 
 public class WialonService {
 
-    private static final int GEOZONE_COLOR = 0x197b30;
-    private static final int GEOZONE_RADIUS = 100;
-    private static final String TAG = "WialonService";
     public static final String GEOZONE_NAME = "SecurityGeozone";
     public static final String NOTIFICATION_NAME = "SecurityGeozoneNotification";
     public static final String NOTIFICATION_EMAIL_SUBJECT = "SecurityGeozoneAlarm";
+    private static final int GEOZONE_COLOR = 0x197b30;
+    private static final int GEOZONE_RADIUS = 100;
+    private static final String TAG = "WialonService";
     private static final String NOTIFICATION_PATTERN_TEXT = "%UNIT% вышел из %ZONE%. %POS_TIME% он двигался со скоростью %SPEED% около '%LOCATION%'.";
     private static Session session;
 
@@ -142,11 +140,8 @@ public class WialonService {
         return future;
     }
 
-    public static CompletableFuture<Position> getLocation(Context context) {
+    public static CompletableFuture<Position> getLocation(long unitId) {
         CompletableFuture<Position> future = new CompletableFuture<>();
-
-        SharedPreferences sharedPref = context.getSharedPreferences("deviceInfo", Context.MODE_PRIVATE);
-        Long unitId = sharedPref.getLong("unitId", 0);
 
         if (unitId == 0) {
             future.completeExceptionally(new IllegalArgumentException("UnitId should not be null"));
@@ -319,7 +314,7 @@ public class WialonService {
         return future;
     }
 
-    public static CompletableFuture<Boolean> createNotification(Resource resource, Context context) {
+    public static CompletableFuture<Boolean> createNotification(Resource resource, long unitId, String email) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         String zoneId = resource.getZl().entrySet().stream()
@@ -332,10 +327,6 @@ public class WialonService {
             future.completeExceptionally(new IllegalArgumentException("Geozone with name = " + GEOZONE_NAME + " not found"));
             return future;
         }
-
-        SharedPreferences sharedPref = context.getSharedPreferences("deviceInfo", Context.MODE_PRIVATE);
-        Long unitId = sharedPref.getLong("unitId", 0);
-        String email = sharedPref.getString("email", "");
 
         if (unitId == 0) {
             future.completeExceptionally(new IllegalArgumentException("UnitId not specified"));
@@ -393,7 +384,7 @@ public class WialonService {
                 .map(Map.Entry::getKey)
                 .orElse(null);
 
-        if(notificationId == null && stop) {
+        if (notificationId == null && stop) {
             future.complete(true);
             return future;
         } else if (notificationId == null) {

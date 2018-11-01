@@ -5,33 +5,33 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.romif.securityalarm.androidclient.feature.service.NotificationService;
 import com.romif.securityalarm.androidclient.feature.service.SecurityService;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
-import java.io.IOException;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 
 public class BlueToothReceiver extends BroadcastReceiver {
 
     private static final String TAG = "BlueToothReceiver";
 
-    private Properties properties = new Properties();
-
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        SharedPreferences sharedPref = context.getSharedPreferences("deviceInfo", Context.MODE_PRIVATE);
-        String address = sharedPref.getString("address", "");
-        Long unitId = sharedPref.getLong("unitId", 0);
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
+
+        boolean autoSwitching = sharedPref.getBoolean(SettingsConstants.BT_AUTO_SWITCHING_PREFERENCE, true);
+        String address = sharedPref.getString(SettingsConstants.DEVICE_PREFERENCE, "");
+        String email = sharedPref.getString(SettingsConstants.EMAIL_PREFERENCE, "");
+        long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
+        String wialonHost = sharedPref.getString(SettingsConstants.WIALON_HOST_PREFERENCE, context.getString(R.string.wialon_host));
         BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-        if (unitId == 0 || device == null || !address.equalsIgnoreCase(device.getAddress())) {
+        if (!autoSwitching || "".equals(email) || "".equals(wialonHost) || unitId == 0 || device == null || !address.equalsIgnoreCase(device.getAddress())) {
             return;
         }
 
@@ -39,14 +39,8 @@ public class BlueToothReceiver extends BroadcastReceiver {
 
         Log.d("BlueToothReceiver", "device " + device.getName());
 
-        try {
-            properties.load(context.getAssets().open("application.properties"));
-        } catch (IOException e) {
-            Log.e(TAG, e.getMessage(), e);
-        }
-
         CompletableFuture<String> loginFuture = SecurityService.getCredential(context)
-                .thenCompose(credential -> WialonService.login((String) properties.get("wialon.host"), credential.getId(), credential.getPassword()))
+                .thenCompose(credential -> WialonService.login(wialonHost, credential.getId(), credential.getPassword()))
                 .handle((aVoid, throwable) -> {
                     if (throwable == null || throwable.getCause() == null) {
                         return aVoid;
@@ -86,9 +80,9 @@ public class BlueToothReceiver extends BroadcastReceiver {
                                 .map(Map.Entry::getKey)
                                 .orElse(null);
                         if (zoneId == null) {
-                            return WialonService.getLocation(context).thenCompose(position -> WialonService.createGeozone(geozone, position));
+                            return WialonService.getLocation(unitId).thenCompose(position -> WialonService.createGeozone(geozone, position));
                         } else {
-                            return WialonService.getLocation(context).thenCompose(position -> WialonService.updateGeozone(geozone, position));
+                            return WialonService.getLocation(unitId).thenCompose(position -> WialonService.updateGeozone(geozone, position));
                         }
                     })
                     .thenCompose(result -> WialonService.getNotification())
@@ -99,7 +93,7 @@ public class BlueToothReceiver extends BroadcastReceiver {
                                 .map(Map.Entry::getKey)
                                 .orElse(null);
                         if (notificationId == null) {
-                            return WialonService.getGeozone(true).thenCompose(resource -> WialonService.createNotification(resource, context));
+                            return WialonService.getGeozone(true).thenCompose(resource -> WialonService.createNotification(resource, unitId, email));
                         } else {
                             return WialonService.updateNotification(notification, false);
                         }
