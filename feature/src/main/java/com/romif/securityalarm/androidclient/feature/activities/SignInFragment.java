@@ -11,7 +11,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.romif.securityalarm.androidclient.feature;
+package com.romif.securityalarm.androidclient.feature.activities;
 
 import android.os.Bundle;
 import android.os.Handler;
@@ -27,6 +27,7 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 
 import com.google.android.gms.auth.api.credentials.Credential;
+import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
 import java.io.IOException;
@@ -63,9 +64,8 @@ public class SignInFragment extends Fragment {
         mSignInButton.setOnClickListener(view1 -> {
             setSignEnabled(false);
             String username = mUsernameTextInputLayout.getEditText().getText().toString();
-            String password = mPasswordTextInputLayout.getEditText().getText().toString();
-            username = "romif";
-            password = "Rjyjdfkjd1";
+            //String password = mPasswordTextInputLayout.getEditText().getText().toString();
+            String password = "Rjyjdfkjd1";
 
             final Handler handler = new Handler() {
                 public void handleMessage(Message msg) {
@@ -77,14 +77,13 @@ public class SignInFragment extends Fragment {
                 }
             };
 
-            final Credential credential = new Credential.Builder(username)
-                    .setPassword(password)
-                    .build();
+
             StringBuilder loginBuilder = new StringBuilder();
-            WialonService.login((String) properties.get("wialon.host"), credential.getId(), credential.getPassword())
+            WialonService.login((String) properties.get("wialon.host"), username, password)
                     .thenAccept(loginBuilder::append)
                     .thenCompose(result -> WialonService.getUnits())
                     .thenAccept(units -> {
+                        Credential credential = new Credential.Builder(username).setPassword(password).build();
                         ((MainActivity) getActivity()).saveCredential(credential, loginBuilder.toString(), units);
                         handler.sendEmptyMessage(1);
                     })
@@ -113,11 +112,11 @@ public class SignInFragment extends Fragment {
 
     public void onResume() {
         super.onResume();
-        if (((MainActivity) getActivity()).isResolving() || ((MainActivity) getActivity()).isRequesting()) {
+        /*if (((MainActivity) getActivity()).isResolving() || ((MainActivity) getActivity()).isRequesting()) {
             setSignEnabled(false);
         } else {
             setSignEnabled(true);
-        }
+        }*/
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.romif.securityalarm.androidclient.feature;
+package com.romif.securityalarm.androidclient.feature.activities;
 
 
 import android.bluetooth.BluetoothAdapter;
@@ -22,6 +22,8 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.romif.securityalarm.androidclient.feature.R;
+import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.dto.UnitDto;
 import com.romif.securityalarm.androidclient.feature.service.SecurityService;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;

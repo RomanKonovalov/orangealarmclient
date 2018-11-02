@@ -100,7 +100,11 @@ public class WialonService {
                 super.onFailure(errorCode, throwableError);
                 // login failed, print error
                 Log.e(TAG, Errors.getErrorText(errorCode));
-                future.completeExceptionally(new InvalidCredentialsException());
+                if (errorCode == 8) {
+                    future.completeExceptionally(new InvalidCredentialsException());
+                } else {
+                    future.completeExceptionally(throwableError != null ? throwableError : new RuntimeException(Errors.getErrorText(errorCode)));
+                }
             }
         });
         return future;

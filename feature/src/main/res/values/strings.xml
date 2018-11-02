@@ -121,4 +121,5 @@
     <string name="wialon_host_title">Orange host</string>
     <string name="pref_title_enable_bt_auto_switching">Bluetooth alarm switching</string>
     <string name="pref_description_enable_bt_auto_switching">Enable/disable alarm activation/deactivation on connecting/disconnecting to selected device</string>
+    <string name="error_credentials_retrieve">Unable to retrieve credentials. Try again later</string>
 </resources>

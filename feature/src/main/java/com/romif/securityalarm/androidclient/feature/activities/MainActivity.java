@@ -1,29 +1,29 @@
-package com.romif.securityalarm.androidclient.feature;
+package com.romif.securityalarm.androidclient.feature.activities;
 
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.auth.api.credentials.Credential;
 import com.google.android.gms.auth.api.credentials.Credentials;
 import com.google.android.gms.auth.api.credentials.CredentialsClient;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResolvableApiException;
+import com.romif.securityalarm.androidclient.feature.R;
+import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.dto.UnitDto;
 import com.romif.securityalarm.androidclient.feature.service.SecurityService;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 
 public class MainActivity extends AppCompatActivity {
@@ -39,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean mIsRequesting;
     private Handler mHandler;
     private CredentialsClient mCredentialsClient;
-    private Properties properties = new Properties();
     private AlertDialog enableNotificationListenerAlertDialog;
 
     @Override
@@ -47,26 +46,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        try {
-            properties.load(getBaseContext().getAssets().open("application.properties"));
-        } catch (IOException e) {
-            Log.e(TAG, e.getMessage(), e);
-        }
-
         mCredentialsClient = Credentials.getClient(this);
-
 
         if (savedInstanceState != null) {
             mIsResolving = savedInstanceState.getBoolean(IS_RESOLVING);
             mIsRequesting = savedInstanceState.getBoolean(IS_REQUESTING);
         }
 
-        if (!NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName())) {        //ask for permission
+        /*if (!NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName())) {        //ask for permission
             Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
             startActivity(intent);
-        }
+        }*/
 
     }
+
+
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -79,23 +73,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Set the appropriate fragment given the state of the Activity and the Intent used to start it.
-     * If the intent is a launcher intent the Splash Fragment is shown otherwise the SignIn Fragment is shown.
-     *
-     */
-    private void setFragment() {
-        Fragment fragment;
-        String tag;
-
-        fragment = new SignInFragment();
-        tag = SIGN_IN_TAG;
-
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, fragment, tag)
-                .commit();
-    }
-
-    /**
      * If the currently displayed Fragment is the SignIn Fragment then enable or disable the sign in form.
      *
      * @param enable Enable form when true, disable form when false.
@@ -105,23 +82,6 @@ public class MainActivity extends AppCompatActivity {
         if (fragment != null && fragment.isVisible()) {
             ((SignInFragment) fragment).setSignEnabled(enable);
         }
-    }
-
-    /**
-     * Get the tag of the currently set Fragment.
-     *
-     * @return Tag of currently set Fragment, or null if no fragment is set.
-     */
-    private String getCurrentFragmentTag() {
-        List<Fragment> fragmentList = getSupportFragmentManager().getFragments();
-        if (fragmentList == null || fragmentList.size() == 0) {
-            return null;
-        }
-        Fragment fragment = fragmentList.get(0);
-        if (fragment != null) {
-            return fragment.getTag();
-        }
-        return null;
     }
 
     protected boolean isResolving() {
@@ -137,6 +97,10 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         Log.d(TAG, "onStart");
 
+        if (mIsRequesting || mIsResolving) {
+            return;
+        }
+
         setSignInEnabled(false);
         mIsRequesting = true;
 
@@ -146,14 +110,19 @@ public class MainActivity extends AppCompatActivity {
                     if (throwable == null || throwable.getCause() == null) {
                         return aVoid;
                     }
+
                     Throwable e = throwable.getCause();
                     if (e instanceof ResolvableApiException) {
                         Log.d(TAG, "Credential resolving");
                         ResolvableApiException rae = (ResolvableApiException) e;
-                        mIsRequesting = false;
                         resolveResult(rae, RC_READ);
-                    } else if (e instanceof ApiException) {
-
+                        mIsResolving = true;
+                        mIsRequesting = false;
+                    } else {
+                        Log.e(TAG, "Credentials not retrieved", e);
+                        mIsRequesting = false;
+                        Toast.makeText(this, R.string.error_credentials_retrieve, Toast.LENGTH_SHORT).show();
+                        new Handler().postDelayed(this::finishAndRemoveTask, 2000);
                     }
                     return aVoid;
                 });
@@ -173,13 +142,14 @@ public class MainActivity extends AppCompatActivity {
 
         mCredentialsClient.save(credential).addOnCompleteListener(
                 task -> {
+                    Intent intent = new Intent(MainActivity.this, ContentActivity.class);
+                    intent.putExtra("login", login);
+                    intent.putExtra("com.romif.securityalarm.androidclient.Units", units);
+                    startActivity(intent);
+                    finish();
+                    mIsResolving = false;
                     if (task.isSuccessful()) {
                         Log.d(TAG, "Credential saved");
-                        Intent intent = new Intent(MainActivity.this, ContentActivity.class);
-                        intent.putExtra("login", login);
-                        intent.putExtra("com.romif.securityalarm.androidclient.Units", units);
-                        startActivity(intent);
-                        finish();
                         return;
                     }
 
@@ -191,8 +161,9 @@ public class MainActivity extends AppCompatActivity {
                         resolveResult(rae, RC_SAVE);
                     } else {
                         // Request has no resolution
-                        // Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, e != null ? e.getLocalizedMessage() : getString(R.string.error_credentials_retrieve), Toast.LENGTH_LONG).show();
                         Log.e(TAG, "Attempt to save credential failed ");
+                        new Handler().postDelayed(this::finishAndRemoveTask, 5000);
                     }
                 });
 
@@ -204,7 +175,10 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "Credential deleted");
                         setSignInEnabled(true);
-                        setFragment();
+                        setTheme(R.style.AppTheme);
+                        getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.fragment_container, new SignInFragment())
+                                .commit();
                     }
                 });
     }
@@ -212,8 +186,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.d(TAG, "onActivityResult:" + requestCode + ":" + resultCode + ":" +
-                data);
+        Log.d(TAG, "onActivityResult:" + requestCode + ":" + resultCode + ":" + data);
 
         if (requestCode == RC_READ) {
             if (resultCode == RESULT_OK) {
@@ -221,8 +194,10 @@ public class MainActivity extends AppCompatActivity {
                 processRetrievedCredential(credential);
             } else {
                 Log.e(TAG, "Credential Read: NOT OK");
-                setFragment();
-                mIsResolving = false;
+                setTheme(R.style.AppTheme);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new SignInFragment())
+                        .commit();
                 //Toast.makeText(this, "Credential Read Failed", Toast.LENGTH_SHORT).show();
             }
         }
@@ -233,10 +208,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Credential Save: OK");
             } else {
                 Log.e(TAG, "Credential Save Failed");
+                Toast.makeText(this, R.string.error_credentials_retrieve, Toast.LENGTH_SHORT).show();
             }
-            startActivity(new Intent(this, ContentActivity.class));
-            finish();
-            mIsResolving = false;
         }
 
     }
@@ -245,11 +218,14 @@ public class MainActivity extends AppCompatActivity {
     private CompletableFuture<String> processRetrievedCredential(Credential credential) {
         Log.d(TAG, "Process Retrieved Credential");
         StringBuilder loginBuilder = new StringBuilder();
-        return WialonService.login((String) properties.get("wialon.host"), credential.getId(), credential.getPassword())
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        String wialonHost = sharedPref.getString(SettingsConstants.WIALON_HOST_PREFERENCE, getString(R.string.wialon_host));
+        return WialonService.login(wialonHost, credential.getId(), credential.getPassword())
                 .thenAccept(loginBuilder::append)
                 .thenCompose(result -> WialonService.getUnits())
                 .thenAccept(units -> {
                     Log.d(TAG, "login and units are retrieved");
+                    mIsRequesting = false;
                     Intent intent = new Intent(MainActivity.this, ContentActivity.class);
                     intent.putExtra("login", loginBuilder.toString());
                     intent.putExtra("com.romif.securityalarm.androidclient.Units", new ArrayList<>(units));

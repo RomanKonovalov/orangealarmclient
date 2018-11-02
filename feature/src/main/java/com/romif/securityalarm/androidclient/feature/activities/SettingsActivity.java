@@ -1,4 +1,4 @@
-package com.romif.securityalarm.androidclient.feature;
+package com.romif.securityalarm.androidclient.feature.activities;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -30,12 +30,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import java.io.Serializable;
+import com.romif.securityalarm.androidclient.feature.R;
+import com.romif.securityalarm.androidclient.feature.SettingsConstants;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 

@@ -1,4 +1,4 @@
-package com.romif.securityalarm.androidclient.feature;
+package com.romif.securityalarm.androidclient.feature.activities;
 
 import android.content.res.Configuration;
 import android.os.Bundle;
