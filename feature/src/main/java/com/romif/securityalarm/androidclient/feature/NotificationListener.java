@@ -25,10 +25,12 @@ public class NotificationListener extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        if (!GMAIL_PACKAGE.equals(sbn.getPackageName())) {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean geozoneEscapeNotification = sharedPref.getBoolean(SettingsConstants.GEOZONE_ESCAPE_NOTIFICATION_PREFERENCE, true);
+
+        if (!geozoneEscapeNotification || !GMAIL_PACKAGE.equals(sbn.getPackageName())) {
             return;
         }
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
         Notification notification = sbn.getNotification();
         SpannableString subject = (SpannableString) notification.extras.get(Notification.EXTRA_TEXT);

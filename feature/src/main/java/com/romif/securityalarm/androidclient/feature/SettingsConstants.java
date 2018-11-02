@@ -16,4 +16,6 @@ public final class SettingsConstants {
     public static final String GEOZONE_COLOR_PREFERENCE = "geozone_color_preference";
     public static final String GEOZONE_RADIUS_PREFERENCE = "geozone_radius_preference";
     public static final String NOTIFICATION_PATTERN_PREFERENCE = "notification_pattern_preference";
+
+    public static final String GEOZONE_ESCAPE_NOTIFICATION_PREFERENCE = "geozone_escape_notification_preference";
 }
