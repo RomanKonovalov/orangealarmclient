@@ -52,10 +52,12 @@ public class BlueToothReceiver extends BroadcastReceiver {
                     return aVoid;
                 });
 
+        String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, context.getString(R.string.notification_name));
         if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
+
             loginFuture
                     .thenCompose(result -> WialonService.getNotification())
-                    .thenCompose(notification -> WialonService.updateNotification(notification, true))
+                    .thenCompose(notification -> WialonService.updateNotification(notification, true, notificationName))
                     .handle((o, throwable) -> {
                         WialonService.logout();
 
@@ -71,31 +73,37 @@ public class BlueToothReceiver extends BroadcastReceiver {
                         return null;
                     });
         } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
+            String geozoneName = sharedPref.getString(SettingsConstants.GEOZONE_NAME_PREFERENCE, context.getString(R.string.geozone_name));
             loginFuture
                     .thenCompose(result -> WialonService.getGeozone(false))
                     .thenCompose(geozone -> {
                         String zoneId = geozone.getZl().entrySet().stream()
-                                .filter(e -> WialonService.GEOZONE_NAME.equals(e.getValue().getN()))
+                                .filter(e -> geozoneName.equals(e.getValue().getN()))
                                 .findFirst()
                                 .map(Map.Entry::getKey)
                                 .orElse(null);
+
+                        int geozoneRadius = Integer.parseInt(sharedPref.getString(SettingsConstants.GEOZONE_RADIUS_PREFERENCE, String.valueOf(context.getResources().getInteger(R.integer.geozone_radius))));
+                        int geozoneColor = - 0xFF000000 + sharedPref.getInt(SettingsConstants.GEOZONE_COLOR_PREFERENCE, context.getColor(R.color.geozone_color));
                         if (zoneId == null) {
-                            return WialonService.getLocation(unitId).thenCompose(position -> WialonService.createGeozone(geozone, position));
+                            return WialonService.getLocation(unitId).thenCompose(position -> WialonService.createGeozone(geozone, position, geozoneName, geozoneRadius, geozoneColor));
                         } else {
-                            return WialonService.getLocation(unitId).thenCompose(position -> WialonService.updateGeozone(geozone, position));
+                            return WialonService.getLocation(unitId).thenCompose(position -> WialonService.updateGeozone(geozone, position, geozoneName, geozoneRadius, geozoneColor));
                         }
                     })
                     .thenCompose(result -> WialonService.getNotification())
                     .thenCompose(notification -> {
                         String notificationId = notification.getUnf().entrySet().stream()
-                                .filter(e -> WialonService.NOTIFICATION_NAME.equals(e.getValue().getN()))
+                                .filter(e -> notificationName.equals(e.getValue().getN()))
                                 .findFirst()
                                 .map(Map.Entry::getKey)
                                 .orElse(null);
                         if (notificationId == null) {
-                            return WialonService.getGeozone(true).thenCompose(resource -> WialonService.createNotification(resource, unitId, email));
+                            String notificationEmailSubject = sharedPref.getString(SettingsConstants.NOTIFICATION_EMAIL_SUBJECT_PREFERENCE, context.getString(R.string.notification_email_subject));
+                            String notificationPatternText = sharedPref.getString(SettingsConstants.NOTIFICATION_PATTERN_PREFERENCE, context.getString(R.string.notification_pattern));
+                            return WialonService.getGeozone(true).thenCompose(resource -> WialonService.createNotification(resource, unitId, email, geozoneName, notificationName, notificationEmailSubject, notificationPatternText));
                         } else {
-                            return WialonService.updateNotification(notification, false);
+                            return WialonService.updateNotification(notification, false, notificationName);
                         }
                     })
                     .handle((o, throwable) -> {

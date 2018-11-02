@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="wialon_host">http://trc-api.wialon.com</string>
+    <string name="geozone_name">SecurityGeozone</string>
+    <string name="notification_name">SecurityGeozoneNotification</string>
+    <string name="notification_email_subject">SecurityGeozoneAlarm</string>
+    <color name="geozone_color">#197b30</color>
+    <integer name="geozone_radius">100</integer>
+    <string name="notification_pattern">%UNIT% вышел из %ZONE%. %POS_TIME% он двигался со скоростью %SPEED% около \'%LOCATION%\'.</string>
 </resources>

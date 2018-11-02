@@ -1,13 +1,67 @@
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
 
 
     <EditTextPreference
         android:defaultValue="@string/wialon_host"
-        android:inputType="textWebEditText"
-        android:key="wialonHostPreference"
+        android:inputType="textUri"
+        android:key="wialon_host_preference"
         android:maxLines="1"
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/wialon_host_title" />
+
+    <EditTextPreference
+        android:defaultValue="@string/geozone_name"
+        android:inputType="text"
+        android:key="geozone_name_preference"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/geozone_name_title" />
+
+    <EditTextPreference
+        android:defaultValue="@string/notification_name"
+        android:inputType="text"
+        android:key="notification_name_preference"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/notification_name_title" />
+
+    <EditTextPreference
+        android:defaultValue="@string/notification_email_subject"
+        android:inputType="text"
+        android:key="notification_email_subject_preference"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/notification_email_subject_title" />
+
+    <EditTextPreference
+        android:defaultValue="@integer/geozone_radius"
+        android:inputType="numberDecimal"
+        android:key="geozone_radius_preference"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/geozone_radius_title" />
+
+    <EditTextPreference
+        android:defaultValue="@string/notification_pattern"
+        android:inputType="textMultiLine"
+        android:key="notification_pattern_preference"
+        android:selectAllOnFocus="true"
+        android:title="@string/notification_pattern_title" />
+
+    <com.skydoves.colorpickerpreference.ColorPickerPreference
+        android:key="geozone_color_preference"
+        android:summary="@string/geozone_color_summary"
+        android:title="@string/geozone_color_title"
+        app:default_color="@color/geozone_color"
+        app:preference_dialog_negative="@string/cancel"
+        app:preference_dialog_positive="@string/confirm"
+        app:preference_dialog_title="Toolbar ColorPickerDialog"
+        app:preference_palette="@drawable/palette"
+        app:preference_selector="@drawable/wheel"/>
 
 </PreferenceScreen>

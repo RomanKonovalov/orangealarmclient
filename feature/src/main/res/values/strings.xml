@@ -124,4 +124,13 @@
     <string name="error_credentials_retrieve">Unable to retrieve credentials. Try again later</string>
     <string name="error_data_retrieve">Unable to retrieve data from Orange. Try again later</string>
     <string name="pref_header_advanced">Advanced</string>
+    <string name="geozone_name_title">Geozone name</string>
+    <string name="notification_name_title">Notification name</string>
+    <string name="notification_email_subject_title">Notification email subject</string>
+    <string name="geozone_radius_title">Geozone radius</string>
+    <string name="notification_pattern_title">Notification pattern</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="geozone_color_title">Geozone color</string>
+    <string name="geozone_color_summary">Change geozone color</string>
 </resources>

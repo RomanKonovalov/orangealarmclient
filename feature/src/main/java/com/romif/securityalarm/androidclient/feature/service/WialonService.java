@@ -35,13 +35,7 @@ import java.util.stream.Collectors;
 
 public class WialonService {
 
-    public static final String GEOZONE_NAME = "SecurityGeozone";
-    public static final String NOTIFICATION_NAME = "SecurityGeozoneNotification";
-    public static final String NOTIFICATION_EMAIL_SUBJECT = "SecurityGeozoneAlarm";
-    private static final int GEOZONE_COLOR = 0x197b30;
-    private static final int GEOZONE_RADIUS = 100;
     private static final String TAG = "WialonService";
-    private static final String NOTIFICATION_PATTERN_TEXT = "%UNIT% вышел из %ZONE%. %POS_TIME% он двигался со скоростью %SPEED% около '%LOCATION%'.";
     private static Session session;
 
     public static CompletableFuture<String> login(String baseUrl, String login, String password) {
@@ -212,15 +206,15 @@ public class WialonService {
         return future;
     }
 
-    public static CompletableFuture<Boolean> createGeozone(Resource resource, Position position) {
+    public static CompletableFuture<Boolean> createGeozone(Resource resource, Position position, String geozoneName, int geozoneRadius, int geozoneColor) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        String params = "{\"n\":\"" + GEOZONE_NAME + "\"," +
+        String params = "{\"n\":\"" + geozoneName + "\"," +
                 "\"t\":3," +
-                "\"w\":" + GEOZONE_RADIUS + "," +
+                "\"w\":" + geozoneRadius + "," +
                 "\"f\":0," +
-                "\"c\":" + GEOZONE_COLOR + "," +
-                "\"p\":[{\"x\":" + position.getLongitude() + ",\"y\":" + position.getLatitude() + ",\"r\":" + GEOZONE_RADIUS + "}]," +
+                "\"c\":" + geozoneColor + "," +
+                "\"p\":[{\"x\":" + position.getLongitude() + ",\"y\":" + position.getLatitude() + ",\"r\":" + geozoneRadius + "}]," +
                 "\"itemId\":" + resource.getId() + "," +
                 "\"id\":0," +
                 "\"callMode\":\"create\"}";
@@ -241,21 +235,21 @@ public class WialonService {
         return future;
     }
 
-    public static CompletableFuture<Boolean> updateGeozone(Resource resource, Position position) {
+    public static CompletableFuture<Boolean> updateGeozone(Resource resource, Position position, String geozoneName, int geozoneRadius, int geozoneColor) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         String zoneId = resource.getZl().entrySet().stream()
-                .filter(e -> GEOZONE_NAME.equals(e.getValue().getN()))
+                .filter(e -> geozoneName.equals(e.getValue().getN()))
                 .findFirst()
                 .map(Map.Entry::getKey)
                 .orElse(null);
 
-        String params = "{\"n\":\"" + GEOZONE_NAME + "\"," +
+        String params = "{\"n\":\"" + geozoneName + "\"," +
                 "\"t\":3," +
-                "\"w\":" + GEOZONE_RADIUS + "," +
+                "\"w\":" + geozoneRadius + "," +
                 "\"f\":0," +
-                "\"c\":" + GEOZONE_COLOR + "," +
-                "\"p\":[{\"x\":" + position.getLongitude() + ",\"y\":" + position.getLatitude() + ",\"r\":" + GEOZONE_RADIUS + "}]," +
+                "\"c\":" + geozoneColor + "," +
+                "\"p\":[{\"x\":" + position.getLongitude() + ",\"y\":" + position.getLatitude() + ",\"r\":" + geozoneRadius + "}]," +
                 "\"itemId\":" + resource.getId() + "," +
                 "\"id\":" + zoneId + "," +
                 "\"callMode\":\"update\"}";
@@ -318,17 +312,17 @@ public class WialonService {
         return future;
     }
 
-    public static CompletableFuture<Boolean> createNotification(Resource resource, long unitId, String email) {
+    public static CompletableFuture<Boolean> createNotification(Resource resource, long unitId, String email, String geozoneName, String notificationName, String notificationEmailSubject, String notificationPatternText) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         String zoneId = resource.getZl().entrySet().stream()
-                .filter(e -> GEOZONE_NAME.equals(e.getValue().getN()))
+                .filter(e -> geozoneName.equals(e.getValue().getN()))
                 .findFirst()
                 .map(Map.Entry::getKey)
                 .orElse(null);
 
         if (zoneId == null) {
-            future.completeExceptionally(new IllegalArgumentException("Geozone with name = " + GEOZONE_NAME + " not found"));
+            future.completeExceptionally(new IllegalArgumentException("Geozone with name = " + geozoneName + " not found"));
             return future;
         }
 
@@ -341,7 +335,7 @@ public class WialonService {
             return future;
         }
 
-        String params = "{\"n\":\"" + NOTIFICATION_NAME + "\"," +
+        String params = "{\"n\":\"" + notificationName + "\"," +
                 "\"ta\":" + Instant.now().getEpochSecond() + "," +
                 "\"td\":" + Instant.now().plus(365, ChronoUnit.DAYS).getEpochSecond() + "," +
                 "\"tz\":134228528," +
@@ -350,8 +344,8 @@ public class WialonService {
                 "\"sch\":{\"f1\":0,\"f2\":0,\"t1\":0,\"t2\":0,\"m\":0,\"y\":0,\"w\":0}," +
                 "\"un\":[" + unitId + "]," +
                 "\"trg\":{\"t\":\"geozone\",\"p\":{\"geozone_ids\":" + zoneId + ",\"geozone_id\":" + zoneId + ",\"type\":1,\"min_speed\":0,\"max_speed\":0,\"sensor_type\":\"\",\"sensor_name_mask\":\"\",\"lower_bound\":0,\"upper_bound\":0,\"merge\":0,\"reversed\":0}}," +
-                "\"act\":[{\"t\":\"email\",\"p\":{\"email_to\":\"" + email + "\",\"subj\":\"" + NOTIFICATION_EMAIL_SUBJECT + "\",\"html\":0,\"img_attach\":0}}]," +
-                "\"txt\":\"" + NOTIFICATION_PATTERN_TEXT + "\"," +
+                "\"act\":[{\"t\":\"email\",\"p\":{\"email_to\":\"" + email + "\",\"subj\":\"" + notificationEmailSubject + "\",\"html\":0,\"img_attach\":0}}]," +
+                "\"txt\":\"" + notificationPatternText + "\"," +
                 "\"fl\":0," +
                 "\"mast\":0," +
                 "\"mpst\":0," +
@@ -379,11 +373,11 @@ public class WialonService {
         return future;
     }
 
-    public static CompletableFuture<Boolean> updateNotification(Resource notification, boolean stop) {
+    public static CompletableFuture<Boolean> updateNotification(Resource notification, boolean stop, String notificationName) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         String notificationId = notification.getUnf().entrySet().stream()
-                .filter(e -> NOTIFICATION_NAME.equals(e.getValue().getN()))
+                .filter(e -> notificationName.equals(e.getValue().getN()))
                 .findFirst()
                 .map(Map.Entry::getKey)
                 .orElse(null);
@@ -392,7 +386,7 @@ public class WialonService {
             future.complete(true);
             return future;
         } else if (notificationId == null) {
-            future.completeExceptionally(new IllegalArgumentException("Notification with name: " + NOTIFICATION_NAME + " does not exist"));
+            future.completeExceptionally(new IllegalArgumentException("Notification with name: " + notificationName + " does not exist"));
             return future;
         }
 
