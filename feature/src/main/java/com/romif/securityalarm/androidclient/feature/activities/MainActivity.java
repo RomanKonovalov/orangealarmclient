@@ -6,6 +6,7 @@ import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
@@ -220,6 +221,14 @@ public class MainActivity extends AppCompatActivity {
         StringBuilder loginBuilder = new StringBuilder();
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String wialonHost = sharedPref.getString(SettingsConstants.WIALON_HOST_PREFERENCE, getString(R.string.wialon_host));
+        final Handler handler = new Handler() {
+            public void handleMessage(Message msg) {
+                if (msg.what < 0) {
+                    Toast.makeText(MainActivity.this, R.string.error_data_retrieve, Toast.LENGTH_LONG).show();
+                    new Handler().postDelayed(MainActivity.this::finishAndRemoveTask, 5000);
+                }
+            }
+        };
         return WialonService.login(wialonHost, credential.getId(), credential.getPassword())
                 .thenAccept(loginBuilder::append)
                 .thenCompose(result -> WialonService.getUnits())
@@ -243,6 +252,7 @@ public class MainActivity extends AppCompatActivity {
                         deleteCredential(credential);
                     } else {
                         Log.e(TAG, "Error while processing RetrievedCredential", exception);
+                        handler.sendEmptyMessage(-1);
                     }
 
                     return result;
