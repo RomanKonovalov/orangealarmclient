@@ -6,6 +6,13 @@
         Here we create an item, setting support:showAsAction to display the item as an action if
         there's room on the compatible Action Bar.
     -->
+
+    <item
+        android:id="@+id/menu_alarm_toggle"
+        android:title="Alerts"
+        support:actionLayout="@layout/alarm_toggle"
+        support:showAsAction="ifRoom"/>
+
     <item
         android:id="@+id/menu_refresh"
         android:icon="@drawable/ic_action_refresh"

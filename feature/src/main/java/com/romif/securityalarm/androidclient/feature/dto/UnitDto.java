@@ -12,6 +12,7 @@ public class UnitDto implements Serializable {
     private double latitude;
     private double longitude;
     private Date time;
+    private boolean alarmEnabled;
 
     public UnitDto() {
     }
@@ -62,6 +63,14 @@ public class UnitDto implements Serializable {
 
     public void setTime(Date time) {
         this.time = time;
+    }
+
+    public boolean isAlarmEnabled() {
+        return alarmEnabled;
+    }
+
+    public void setAlarmEnabled(boolean alarmEnabled) {
+        this.alarmEnabled = alarmEnabled;
     }
 
     @Override

@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class WialonService {
@@ -104,7 +105,7 @@ public class WialonService {
         return future;
     }
 
-    public static CompletableFuture<ArrayList<UnitDto>> getUnits() {
+    private static CompletableFuture<ArrayList<UnitDto>> getUnits() {
         CompletableFuture<ArrayList<UnitDto>> future = new CompletableFuture<>();
         //Create new search specification
         SearchSpec searchSpec = new SearchSpec();
@@ -136,6 +137,26 @@ public class WialonService {
         });
 
         return future;
+    }
+
+    public static CompletableFuture<ArrayList<UnitDto>> getUnitDtos(String notificationName, long unitId) {
+        AtomicBoolean alarmEnabled = new AtomicBoolean(false);
+        return getNotification()
+                .thenAccept(notification -> {
+                    alarmEnabled.set(!notification.getUnf().entrySet().stream()
+                            .filter(e -> notificationName.equals(e.getValue().getN()) && e.getValue().getUn().contains(unitId))
+                            .map(entry -> entry.getValue().getFl() == 2)
+                            .findFirst()
+                            .orElse(false));
+                })
+                .thenCompose(aVoid -> getUnits())
+                .thenApply(unitDtos -> {
+                    unitDtos.stream()
+                            .filter(u -> u.getId() == unitId)
+                            .findFirst()
+                            .ifPresent(unitDto -> unitDto.setAlarmEnabled(alarmEnabled.get()));
+                    return unitDtos;
+                });
     }
 
     public static CompletableFuture<Position> getLocation(long unitId) {

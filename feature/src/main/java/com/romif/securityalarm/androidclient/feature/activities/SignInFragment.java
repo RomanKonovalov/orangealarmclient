@@ -13,9 +13,11 @@
  */
 package com.romif.securityalarm.androidclient.feature.activities;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -28,6 +30,7 @@ import android.widget.ProgressBar;
 
 import com.google.android.gms.auth.api.credentials.Credential;
 import com.romif.securityalarm.androidclient.feature.R;
+import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
 import java.io.IOException;
@@ -79,9 +82,12 @@ public class SignInFragment extends Fragment {
 
 
             StringBuilder loginBuilder = new StringBuilder();
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+            String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
+            long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
             WialonService.login((String) properties.get("wialon.host"), username, password)
                     .thenAccept(loginBuilder::append)
-                    .thenCompose(result -> WialonService.getUnits())
+                    .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
                     .thenAccept(units -> {
                         Credential credential = new Credential.Builder(username).setPassword(password).build();
                         ((MainActivity) getActivity()).saveCredential(credential, loginBuilder.toString(), units);

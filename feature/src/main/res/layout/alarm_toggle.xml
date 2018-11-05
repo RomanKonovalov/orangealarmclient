@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.github.zagum.switchicon.SwitchIconView
+        android:id="@+id/switchIconView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:si_disabled_alpha=".5"
+        app:si_disabled_color="#8000da00"
+        app:si_enabled="false"
+        app:si_tint_color="@color/green"
+        app:srcCompat="@drawable/ic_alarm_resumed" />
+
+</android.support.constraint.ConstraintLayout>

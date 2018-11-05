@@ -58,4 +58,8 @@
     <string name="geozone_color_summary">Change geozone color</string>
     <string name="pref_title_geozone_escape_notification">Geozone escape notification</string>
     <string name="pref_title_notification_listener_settings">Notification listener settings</string>
+    <string name="error_refresh_state">Unable to refresh state. Please try again later</string>
+    <string name="alarm_acivated">Alarm Acivated</string>
+    <string name="alarm_deactivated">Alarm Deactivated</string>
+    <string name="error_change_state">Unable to change state. Please try again later</string>
 </resources>

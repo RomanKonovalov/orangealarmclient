@@ -16,7 +16,6 @@ import android.widget.Toast;
 import com.google.android.gms.auth.api.credentials.Credential;
 import com.google.android.gms.auth.api.credentials.Credentials;
 import com.google.android.gms.auth.api.credentials.CredentialsClient;
-import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
@@ -229,13 +228,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
+        Intent intent = new Intent(MainActivity.this, ContentActivity.class);
+        String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
+        long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
         return WialonService.login(wialonHost, credential.getId(), credential.getPassword())
                 .thenAccept(loginBuilder::append)
-                .thenCompose(result -> WialonService.getUnits())
+                .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
                 .thenAccept(units -> {
                     Log.d(TAG, "login and units are retrieved");
                     mIsRequesting = false;
-                    Intent intent = new Intent(MainActivity.this, ContentActivity.class);
                     intent.putExtra("login", loginBuilder.toString());
                     intent.putExtra("com.romif.securityalarm.androidclient.Units", new ArrayList<>(units));
                     startActivity(intent);
