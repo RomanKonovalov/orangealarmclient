@@ -228,15 +228,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 deviceList.setEntryValues(entryValues);
             }
 
-            Pattern gmailPattern = Patterns.EMAIL_ADDRESS; // API level 8+
-            Account[] accounts = AccountManager.get(getContext()).getAccounts();
-            String[] emails = Arrays.stream(accounts).map(account -> account.name).filter(name -> gmailPattern.matcher(name).matches()).toArray(String[]::new);
-            ListPreference emailList = (ListPreference) findPreference(SettingsConstants.EMAIL_PREFERENCE);
-            if (emailList != null) {
-                emailList.setEntries(emails);
-                emailList.setEntryValues(emails);
-            }
-
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
             String[] unitsNames = sharedPref.getStringSet(SettingsConstants.UNIT_NAMES, Collections.emptySet()).toArray(new String[0]);
             String[] unitIds = sharedPref.getStringSet(SettingsConstants.UNIT_IDS, Collections.emptySet()).toArray(new String[0]);
@@ -252,7 +243,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // guidelines.
             bindPreferenceSummaryToValue(findPreference(SettingsConstants.DEVICE_PREFERENCE));
             bindPreferenceSummaryToValue(findPreference(SettingsConstants.UNIT_PREFERENCE));
-            bindPreferenceSummaryToValue(findPreference(SettingsConstants.EMAIL_PREFERENCE));
         }
 
         @Override
@@ -308,11 +298,21 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_notification);
             setHasOptionsMenu(true);
 
+            Pattern gmailPattern = Patterns.EMAIL_ADDRESS; // API level 8+
+            Account[] accounts = AccountManager.get(getContext()).getAccounts();
+            String[] emails = Arrays.stream(accounts).map(account -> account.name).filter(name -> gmailPattern.matcher(name).matches()).toArray(String[]::new);
+            ListPreference emailList = (ListPreference) findPreference(SettingsConstants.EMAIL_PREFERENCE);
+            if (emailList != null) {
+                emailList.setEntries(emails);
+                emailList.setEntryValues(emails);
+            }
+
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
             bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
+            bindPreferenceSummaryToValue(findPreference(SettingsConstants.EMAIL_PREFERENCE));
         }
 
         @Override
