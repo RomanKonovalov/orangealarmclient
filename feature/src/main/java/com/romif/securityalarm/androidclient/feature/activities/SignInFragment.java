@@ -61,6 +61,7 @@ public class SignInFragment extends Fragment {
             long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
             boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
             String wialonHost = sharedPref.getString(SettingsConstants.WIALON_HOST_PREFERENCE, getString(R.string.wialon_host));
+            String geozoneName = sharedPref.getString(SettingsConstants.GEOZONE_NAME_PREFERENCE, getString(R.string.geozone_name));
             WialonService.getToken(wialonHost, username, password, useSmartLock)
                     .thenApply(token -> {
                         if (!useSmartLock) {
@@ -71,7 +72,7 @@ public class SignInFragment extends Fragment {
                         return token;
                     })
                     .thenCompose(token -> WialonService.login(wialonHost, token))
-                    .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
+                    .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId, geozoneName))
                     .thenAccept(units -> {
                         Credential credential = new Credential.Builder(username).setPassword(password).build();
                         ((MainActivity) getActivity()).saveCredential(credential, units);

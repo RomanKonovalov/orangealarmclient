@@ -26,6 +26,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.romif.securityalarm.androidclient.feature.R;
@@ -186,7 +187,7 @@ public class ContentActivity extends AppCompatActivity {
                         .thenCompose(notification -> WialonService.updateNotification(notification, true, notificationName));
             }
             futureUpdateNotification
-                    .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
+                    .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId, geozoneName))
                     .thenAccept(units -> {
                         Log.d(TAG, "Units are retrieved");
                         putUnits(units);
@@ -231,12 +232,13 @@ public class ContentActivity extends AppCompatActivity {
         String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
         long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
         boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
+        String geozoneName = sharedPref.getString(SettingsConstants.GEOZONE_NAME_PREFERENCE, getString(R.string.geozone_name));
         CompletableFuture<String> tokenFuture = useSmartLock ? SecurityService.getCredential(this)
                 .thenCompose(credential -> WialonService.getToken(wialonHost, credential.getId(), credential.getPassword(), true)) :
                 CompletableFuture.completedFuture(sharedPref.getString(SettingsConstants.TOKEN, ""));
         tokenFuture
                 .thenCompose(token -> WialonService.login(wialonHost, token))
-                .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
+                .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId, geozoneName))
                 .thenAccept(units -> {
                     Log.d(TAG, "units are retrieved");
                     putUnits(units);
@@ -282,14 +284,24 @@ public class ContentActivity extends AppCompatActivity {
 
     private void setMap() {
         mapFragment.getMapAsync(googleMap -> {
+            googleMap.clear();
             UnitDto unitDto = getUnit();
             if (unitDto != null) {
                 googleMap.addMarker(new MarkerOptions()
-                        .position(new LatLng(unitDto.getLatitude(), unitDto.getLongitude()))
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.car_icon))
+                        .position(new LatLng(unitDto.getUnitLatitude(), unitDto.getUnitLongitude()))
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car_map))
                         .snippet(unitDto.getName())
                         .title(unitDto.getName()));
-                googleMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(unitDto.getLatitude(), unitDto.getLongitude())));
+                if (unitDto.isAlarmEnabled()) {
+                    int geozoneRadius = Integer.parseInt(sharedPref.getString(SettingsConstants.GEOZONE_RADIUS_PREFERENCE, String.valueOf(getResources().getInteger(R.integer.geozone_radius))));
+                    int geozoneColor = sharedPref.getInt(SettingsConstants.GEOZONE_COLOR_PREFERENCE, getColor(R.color.geozone_color));
+                    googleMap.addCircle(new CircleOptions()
+                            .center(new LatLng(unitDto.getGeozoneLatitude(), unitDto.getGeozoneLongitude()))
+                            .radius(geozoneRadius)
+                            .strokeColor(geozoneColor)
+                            .fillColor(-0x80000000 + geozoneColor));
+                }
+                googleMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(unitDto.getUnitLatitude(), unitDto.getUnitLongitude())));
             }
         });
     }

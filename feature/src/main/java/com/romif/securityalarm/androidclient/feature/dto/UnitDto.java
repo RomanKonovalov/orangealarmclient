@@ -9,8 +9,10 @@ public class UnitDto implements Serializable {
 
     private Long id;
     private String name;
-    private double latitude;
-    private double longitude;
+    private double unitLatitude;
+    private double unitLongitude;
+    private double geozoneLatitude;
+    private double geozoneLongitude;
     private Date time;
     private boolean alarmEnabled;
 
@@ -20,8 +22,8 @@ public class UnitDto implements Serializable {
     public UnitDto(Unit unit) {
         id = unit.getId();
         name = unit.getName();
-        latitude = unit.getPosition().getLatitude();
-        longitude = unit.getPosition().getLongitude();
+        unitLatitude = unit.getPosition().getLatitude();
+        unitLongitude = unit.getPosition().getLongitude();
         this.time = new Date(unit.getPosition().getTime() * 1000);
     }
 
@@ -41,20 +43,20 @@ public class UnitDto implements Serializable {
         this.name = name;
     }
 
-    public double getLatitude() {
-        return latitude;
+    public double getUnitLatitude() {
+        return unitLatitude;
     }
 
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
+    public void setUnitLatitude(double unitLatitude) {
+        this.unitLatitude = unitLatitude;
     }
 
-    public double getLongitude() {
-        return longitude;
+    public double getUnitLongitude() {
+        return unitLongitude;
     }
 
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
+    public void setUnitLongitude(double unitLongitude) {
+        this.unitLongitude = unitLongitude;
     }
 
     public Date getTime() {
@@ -71,6 +73,22 @@ public class UnitDto implements Serializable {
 
     public void setAlarmEnabled(boolean alarmEnabled) {
         this.alarmEnabled = alarmEnabled;
+    }
+
+    public double getGeozoneLatitude() {
+        return geozoneLatitude;
+    }
+
+    public void setGeozoneLatitude(double geozoneLatitude) {
+        this.geozoneLatitude = geozoneLatitude;
+    }
+
+    public double getGeozoneLongitude() {
+        return geozoneLongitude;
+    }
+
+    public void setGeozoneLongitude(double geozoneLongitude) {
+        this.geozoneLongitude = geozoneLongitude;
     }
 
     @Override

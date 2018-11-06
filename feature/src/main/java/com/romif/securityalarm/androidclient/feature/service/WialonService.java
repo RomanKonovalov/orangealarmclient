@@ -117,7 +117,7 @@ public class WialonService {
         return future;
     }
 
-    private static CompletableFuture<ArrayList<UnitDto>> getUnits() {
+    private static CompletableFuture<ArrayList<UnitDto>> getUnits(Resource resource, long unitId, String notificationName, String geozoneName) {
         CompletableFuture<ArrayList<UnitDto>> future = new CompletableFuture<>();
         //Create new search specification
         SearchSpec searchSpec = new SearchSpec();
@@ -136,7 +136,31 @@ public class WialonService {
                 super.onSuccessSearch(items);
                 // Search succeed
                 Log.i(TAG, "Search items is successful");
-                future.complete(new ArrayList<>(Stream.of(items).map(item -> new UnitDto((Unit) item)).collect(Collectors.toList())));
+
+                ArrayList<UnitDto> unitDtos = Stream.of(items)
+                        .map(item -> new UnitDto((Unit) item))
+                        .collect(Collectors.toCollection(ArrayList::new));
+                StreamSupport.stream(unitDtos)
+                        .filter(u -> u.getId() == unitId)
+                        .findFirst()
+                        .ifPresent(unitDto -> {
+                            unitDto.setAlarmEnabled(!StreamSupport.stream(resource.getUnf().entrySet())
+                                    .filter(e -> notificationName.equals(e.getValue().getN()) && e.getValue().getUn().contains(unitId))
+                                    .map(entry -> entry.getValue().getFl() == 2)
+                                    .findFirst()
+                                    .orElse(true));
+
+                            StreamSupport.stream(resource.getZl().entrySet())
+                                    .filter(e -> geozoneName.equals(e.getValue().getN()))
+                                    .findFirst()
+                                    .map(entry -> entry.getValue().getB())
+                                    .ifPresent(b -> {
+                                        unitDto.setGeozoneLongitude(b.getCenX());
+                                        unitDto.setGeozoneLatitude(b.getCenY());
+                                    });
+                        });
+
+                future.complete(unitDtos);
             }
 
             @Override
@@ -151,24 +175,10 @@ public class WialonService {
         return future;
     }
 
-    public static CompletableFuture<ArrayList<UnitDto>> getUnitDtos(String notificationName, long unitId) {
+    public static CompletableFuture<ArrayList<UnitDto>> getUnitDtos(String notificationName, long unitId, String geozoneName) {
         AtomicBoolean alarmEnabled = new AtomicBoolean(false);
-        return getNotification()
-                .thenAccept(notification -> {
-                    alarmEnabled.set(!StreamSupport.stream(notification.getUnf().entrySet())
-                            .filter(e -> notificationName.equals(e.getValue().getN()) && e.getValue().getUn().contains(unitId))
-                            .map(entry -> entry.getValue().getFl() == 2)
-                            .findFirst()
-                            .orElse(true));
-                })
-                .thenCompose(aVoid -> getUnits())
-                .thenApply(unitDtos -> {
-                    StreamSupport.stream(unitDtos)
-                            .filter(u -> u.getId() == unitId)
-                            .findFirst()
-                            .ifPresent(unitDto -> unitDto.setAlarmEnabled(alarmEnabled.get()));
-                    return unitDtos;
-                });
+        return getGeozone(true)
+                .thenCompose(resource -> getUnits(resource, unitId, notificationName, geozoneName));
     }
 
     public static CompletableFuture<Position> getLocation(long unitId) {
@@ -497,7 +507,7 @@ public class WialonService {
                                 if (item != null && (item instanceof Unit) && ((Unit) item).getPosition() != null) {
                                     UnitData.Position unitPosition = ((Unit) item).getPosition();
                                     if (getActivity() != null) {
-                                        unitPosition.getLatitude();
+                                        unitPosition.getUnitLatitude();
                                     }
                                 }
                             }

@@ -91,7 +91,7 @@ public class BlueToothReceiver extends BroadcastReceiver {
                                 .orElse(null);
 
                         int geozoneRadius = Integer.parseInt(sharedPref.getString(SettingsConstants.GEOZONE_RADIUS_PREFERENCE, String.valueOf(context.getResources().getInteger(R.integer.geozone_radius))));
-                        int geozoneColor = -0xFF000000 + sharedPref.getInt(SettingsConstants.GEOZONE_COLOR_PREFERENCE, context.getColor(R.color.geozone_color));
+                        int geozoneColor = -0x80000000 + sharedPref.getInt(SettingsConstants.GEOZONE_COLOR_PREFERENCE, context.getColor(R.color.geozone_color));
                         if (zoneId == null) {
                             return WialonService.getLocation(unitId).thenCompose(position -> WialonService.createGeozone(geozone, position, geozoneName, geozoneRadius, geozoneColor));
                         } else {

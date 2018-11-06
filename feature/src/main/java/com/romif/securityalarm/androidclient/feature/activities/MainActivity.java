@@ -232,11 +232,12 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, ContentActivity.class);
         String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
         long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
+        String geozoneName = sharedPref.getString(SettingsConstants.GEOZONE_NAME_PREFERENCE, getString(R.string.geozone_name));
         CompletableFuture<String> tokenFuture = useSmartLock ? WialonService.getToken(wialonHost, credential.getId(), credential.getPassword(), true) :
                 CompletableFuture.completedFuture(sharedPref.getString(SettingsConstants.TOKEN, ""));
         return tokenFuture
                 .thenCompose(token -> WialonService.login(wialonHost, token))
-                .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
+                .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId, geozoneName))
                 .thenAccept(units -> {
                     Log.d(TAG, "units are retrieved");
                     mIsRequesting = false;
