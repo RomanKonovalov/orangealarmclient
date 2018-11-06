@@ -1,6 +1,5 @@
 package com.romif.securityalarm.androidclient.feature.activities;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
@@ -24,7 +23,8 @@ import com.romif.securityalarm.androidclient.feature.service.SecurityService;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
 import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
+
+import java9.util.concurrent.CompletableFuture;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,9 +37,7 @@ public class MainActivity extends AppCompatActivity {
     // Add mGoogleApiClient and mIsResolving fields here.
     private boolean mIsResolving;
     private boolean mIsRequesting;
-    private Handler mHandler;
     private CredentialsClient mCredentialsClient;
-    private AlertDialog enableNotificationListenerAlertDialog;
     private SharedPreferences sharedPref;
 
     @Override
@@ -63,8 +61,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         // Save the user's current sign in state
@@ -85,14 +81,6 @@ public class MainActivity extends AppCompatActivity {
         if (fragment != null && fragment.isVisible()) {
             ((SignInFragment) fragment).setSignEnabled(enable);
         }
-    }
-
-    protected boolean isResolving() {
-        return mIsResolving;
-    }
-
-    protected boolean isRequesting() {
-        return mIsRequesting;
     }
 
     @Override
@@ -143,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected void saveCredential(Credential credential, String login, ArrayList<UnitDto> units) {
+    protected void saveCredential(Credential credential, ArrayList<UnitDto> units) {
         boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
 
         if (!useSmartLock) {

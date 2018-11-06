@@ -41,8 +41,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+
+import java9.util.concurrent.CompletableFuture;
+import java9.util.stream.Collectors;
+import java9.util.stream.StreamSupport;
 
 public class ContentActivity extends AppCompatActivity {
 
@@ -70,8 +72,8 @@ public class ContentActivity extends AppCompatActivity {
         mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
 
         SharedPreferences.Editor sharedPrefEditor = android.preference.PreferenceManager.getDefaultSharedPreferences(this).edit();
-        sharedPrefEditor.putStringSet(SettingsConstants.UNIT_NAMES, new HashSet<>(getUnits().stream().map(UnitDto::getName).collect(Collectors.toSet())));
-        sharedPrefEditor.putStringSet(SettingsConstants.UNIT_IDS, new HashSet<>(getUnits().stream().map(unitDto -> unitDto.getId().toString()).collect(Collectors.toSet())));
+        sharedPrefEditor.putStringSet(SettingsConstants.UNIT_NAMES, new HashSet<>(StreamSupport.stream(getUnits()).map(UnitDto::getName).collect(Collectors.toSet())));
+        sharedPrefEditor.putStringSet(SettingsConstants.UNIT_IDS, new HashSet<>(StreamSupport.stream(getUnits()).map(unitDto -> unitDto.getId().toString()).collect(Collectors.toSet())));
         sharedPrefEditor.apply();
 
         progressBar = findViewById(R.id.mapProgressBar);
@@ -149,7 +151,7 @@ public class ContentActivity extends AppCompatActivity {
                 futureUpdateNotification = future
                         .thenCompose(result -> WialonService.getGeozone(false))
                         .thenCompose(geozone -> {
-                            String zoneId = geozone.getZl().entrySet().stream()
+                            String zoneId = StreamSupport.stream(geozone.getZl().entrySet())
                                     .filter(e -> geozoneName.equals(e.getValue().getN()))
                                     .findFirst()
                                     .map(Map.Entry::getKey)
@@ -165,7 +167,7 @@ public class ContentActivity extends AppCompatActivity {
                         })
                         .thenCompose(result -> WialonService.getNotification())
                         .thenCompose(notification -> {
-                            String notificationId = notification.getUnf().entrySet().stream()
+                            String notificationId = StreamSupport.stream(notification.getUnf().entrySet())
                                     .filter(e -> notificationName.equals(e.getValue().getN()))
                                     .findFirst()
                                     .map(Map.Entry::getKey)
@@ -239,8 +241,8 @@ public class ContentActivity extends AppCompatActivity {
                     Log.d(TAG, "units are retrieved");
                     putUnits(units);
                     SharedPreferences.Editor sharedPrefEditor = android.preference.PreferenceManager.getDefaultSharedPreferences(this).edit();
-                    sharedPrefEditor.putStringSet(SettingsConstants.UNIT_NAMES, new HashSet<>(units.stream().map(UnitDto::getName).collect(Collectors.toSet())));
-                    sharedPrefEditor.putStringSet(SettingsConstants.UNIT_IDS, new HashSet<>(units.stream().map(unitDto -> unitDto.getId().toString()).collect(Collectors.toSet())));
+                    sharedPrefEditor.putStringSet(SettingsConstants.UNIT_NAMES, new HashSet<>(StreamSupport.stream(units).map(UnitDto::getName).collect(Collectors.toSet())));
+                    sharedPrefEditor.putStringSet(SettingsConstants.UNIT_IDS, new HashSet<>(StreamSupport.stream(units).map(unitDto -> unitDto.getId().toString()).collect(Collectors.toSet())));
                     sharedPrefEditor.apply();
                     handler.sendEmptyMessage(1);
                 })
@@ -263,8 +265,6 @@ public class ContentActivity extends AppCompatActivity {
         if (!bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        } else {
-
         }
     }
 
@@ -327,7 +327,7 @@ public class ContentActivity extends AppCompatActivity {
     @Nullable
     private UnitDto getUnit() {
         long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
-        return getUnits().stream()
+        return StreamSupport.stream(getUnits())
                 .filter(u -> u.getId() == unitId)
                 .findFirst()
                 .orElse(null);

@@ -1,16 +1,3 @@
-/**
- * Copyright Google Inc. All Rights Reserved.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.romif.securityalarm.androidclient.feature.activities;
 
 import android.content.SharedPreferences;
@@ -33,9 +20,6 @@ import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
-import java.io.IOException;
-import java.util.Properties;
-
 public class SignInFragment extends Fragment {
 
     private static final String TAG = "SignInFragment";
@@ -46,7 +30,6 @@ public class SignInFragment extends Fragment {
     private Button mSignInButton;
     private Button mClearButton;
     private ProgressBar mSignInProgressBar;
-    private Properties properties = new Properties();
 
     @Override
     public View onCreateView(LayoutInflater layoutInflater, ViewGroup container, Bundle savedInstanceState) {
@@ -57,18 +40,11 @@ public class SignInFragment extends Fragment {
         mUsernameEditText = view.findViewById(R.id.usernameEditText);
         mPasswordEditText = view.findViewById(R.id.passwordEditText);
 
-        try {
-            properties.load(getContext().getAssets().open("application.properties"));
-        } catch (IOException e) {
-            Log.e(TAG, e.getMessage(), e);
-        }
-
         mSignInButton = view.findViewById(R.id.signInButton);
         mSignInButton.setOnClickListener(view1 -> {
             setSignEnabled(false);
             String username = mUsernameTextInputLayout.getEditText().getText().toString();
-            //String password = mPasswordTextInputLayout.getEditText().getText().toString();
-            String password = "Rjyjdfkjd1";
+            String password = mPasswordTextInputLayout.getEditText().getText().toString();
 
             final Handler handler = new Handler() {
                 public void handleMessage(Message msg) {
@@ -80,8 +56,6 @@ public class SignInFragment extends Fragment {
                 }
             };
 
-
-            StringBuilder loginBuilder = new StringBuilder();
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
             String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
             long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
@@ -97,11 +71,10 @@ public class SignInFragment extends Fragment {
                         return token;
                     })
                     .thenCompose(token -> WialonService.login(wialonHost, token))
-                    .thenAccept(loginBuilder::append)
                     .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
                     .thenAccept(units -> {
                         Credential credential = new Credential.Builder(username).setPassword(password).build();
-                        ((MainActivity) getActivity()).saveCredential(credential, loginBuilder.toString(), units);
+                        ((MainActivity) getActivity()).saveCredential(credential, units);
                         handler.sendEmptyMessage(1);
                     })
                     .thenCompose(result -> WialonService.logout())

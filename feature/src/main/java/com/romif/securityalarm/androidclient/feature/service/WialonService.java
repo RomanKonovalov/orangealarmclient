@@ -1,6 +1,7 @@
 package com.romif.securityalarm.androidclient.feature.service;
 
 import android.net.Uri;
+import android.text.format.DateUtils;
 import android.util.Log;
 
 import com.romif.securityalarm.androidclient.feature.dto.UnitDto;
@@ -25,15 +26,16 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+
+import java9.util.concurrent.CompletableFuture;
+import java9.util.stream.Collectors;
+import java9.util.stream.Stream;
+import java9.util.stream.StreamSupport;
 
 public class WialonService {
 
@@ -134,7 +136,7 @@ public class WialonService {
                 super.onSuccessSearch(items);
                 // Search succeed
                 Log.i(TAG, "Search items is successful");
-                future.complete(new ArrayList<>(Arrays.stream(items).map(item -> new UnitDto((Unit) item)).collect(Collectors.toList())));
+                future.complete(new ArrayList<>(Stream.of(items).map(item -> new UnitDto((Unit) item)).collect(Collectors.toList())));
             }
 
             @Override
@@ -153,15 +155,15 @@ public class WialonService {
         AtomicBoolean alarmEnabled = new AtomicBoolean(false);
         return getNotification()
                 .thenAccept(notification -> {
-                    alarmEnabled.set(!notification.getUnf().entrySet().stream()
+                    alarmEnabled.set(!StreamSupport.stream(notification.getUnf().entrySet())
                             .filter(e -> notificationName.equals(e.getValue().getN()) && e.getValue().getUn().contains(unitId))
                             .map(entry -> entry.getValue().getFl() == 2)
                             .findFirst()
-                            .orElse(false));
+                            .orElse(true));
                 })
                 .thenCompose(aVoid -> getUnits())
                 .thenApply(unitDtos -> {
-                    unitDtos.stream()
+                    StreamSupport.stream(unitDtos)
                             .filter(u -> u.getId() == unitId)
                             .findFirst()
                             .ifPresent(unitDto -> unitDto.setAlarmEnabled(alarmEnabled.get()));
@@ -269,7 +271,7 @@ public class WialonService {
     public static CompletableFuture<Boolean> updateGeozone(Resource resource, Position position, String geozoneName, int geozoneRadius, int geozoneColor) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        String zoneId = resource.getZl().entrySet().stream()
+        String zoneId = StreamSupport.stream(resource.getZl().entrySet())
                 .filter(e -> geozoneName.equals(e.getValue().getN()))
                 .findFirst()
                 .map(Map.Entry::getKey)
@@ -346,7 +348,7 @@ public class WialonService {
     public static CompletableFuture<Boolean> createNotification(Resource resource, long unitId, String email, String geozoneName, String notificationName, String notificationEmailSubject, String notificationPatternText) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        String zoneId = resource.getZl().entrySet().stream()
+        String zoneId = StreamSupport.stream(resource.getZl().entrySet())
                 .filter(e -> geozoneName.equals(e.getValue().getN()))
                 .findFirst()
                 .map(Map.Entry::getKey)
@@ -367,8 +369,8 @@ public class WialonService {
         }
 
         String params = "{\"n\":\"" + notificationName + "\"," +
-                "\"ta\":" + Instant.now().getEpochSecond() + "," +
-                "\"td\":" + Instant.now().plus(365, ChronoUnit.DAYS).getEpochSecond() + "," +
+                "\"ta\":" + (new Date().getTime() / 1000) + "," +
+                "\"td\":" + ((new Date().getTime() + DateUtils.YEAR_IN_MILLIS) / 1000) + "," +
                 "\"tz\":134228528," +
                 "\"la\":\"ru\"," +
                 "\"ma\":0," +
@@ -407,7 +409,7 @@ public class WialonService {
     public static CompletableFuture<Boolean> updateNotification(Resource notification, boolean stop, String notificationName) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        String notificationId = notification.getUnf().entrySet().stream()
+        String notificationId = StreamSupport.stream(notification.getUnf().entrySet())
                 .filter(e -> notificationName.equals(e.getValue().getN()))
                 .findFirst()
                 .map(Map.Entry::getKey)

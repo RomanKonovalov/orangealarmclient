@@ -14,7 +14,9 @@ import com.romif.securityalarm.androidclient.feature.service.SecurityService;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+
+import java9.util.concurrent.CompletableFuture;
+import java9.util.stream.StreamSupport;
 
 public class BlueToothReceiver extends BroadcastReceiver {
 
@@ -82,14 +84,14 @@ public class BlueToothReceiver extends BroadcastReceiver {
             loginFuture
                     .thenCompose(result -> WialonService.getGeozone(false))
                     .thenCompose(geozone -> {
-                        String zoneId = geozone.getZl().entrySet().stream()
+                        String zoneId = StreamSupport.stream(geozone.getZl().entrySet())
                                 .filter(e -> geozoneName.equals(e.getValue().getN()))
                                 .findFirst()
                                 .map(Map.Entry::getKey)
                                 .orElse(null);
 
                         int geozoneRadius = Integer.parseInt(sharedPref.getString(SettingsConstants.GEOZONE_RADIUS_PREFERENCE, String.valueOf(context.getResources().getInteger(R.integer.geozone_radius))));
-                        int geozoneColor = - 0xFF000000 + sharedPref.getInt(SettingsConstants.GEOZONE_COLOR_PREFERENCE, context.getColor(R.color.geozone_color));
+                        int geozoneColor = -0xFF000000 + sharedPref.getInt(SettingsConstants.GEOZONE_COLOR_PREFERENCE, context.getColor(R.color.geozone_color));
                         if (zoneId == null) {
                             return WialonService.getLocation(unitId).thenCompose(position -> WialonService.createGeozone(geozone, position, geozoneName, geozoneRadius, geozoneColor));
                         } else {
@@ -98,7 +100,7 @@ public class BlueToothReceiver extends BroadcastReceiver {
                     })
                     .thenCompose(result -> WialonService.getNotification())
                     .thenCompose(notification -> {
-                        String notificationId = notification.getUnf().entrySet().stream()
+                        String notificationId = StreamSupport.stream(notification.getUnf().entrySet())
                                 .filter(e -> notificationName.equals(e.getValue().getN()))
                                 .findFirst()
                                 .map(Map.Entry::getKey)

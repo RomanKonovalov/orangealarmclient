@@ -12,7 +12,7 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 
-import java.util.concurrent.CompletableFuture;
+import java9.util.concurrent.CompletableFuture;
 
 public class SecurityService {
 
@@ -45,7 +45,7 @@ public class SecurityService {
                         Log.w(TAG, "Credential resolving required.");
                         future.completeExceptionally(e);
                     } else if (e instanceof ApiException) {
-                        Log.e(TAG, "Unsuccessful credential request." + ((ApiException)e).getStatusMessage(), e);
+                        Log.e(TAG, "Unsuccessful credential request.", e);
                         future.completeExceptionally(e);
                     } else {
                         Log.e(TAG, "Unsuccessful credential request. Unknown error.", e);
@@ -78,11 +78,4 @@ public class SecurityService {
         return future;
     }
 
-    public static class SecurityServiceException extends RuntimeException {
-
-        public enum ExceptionType {
-
-        }
-
-    }
 }

@@ -33,12 +33,13 @@ import android.widget.LinearLayout;
 import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
+import java9.util.stream.Collectors;
+import java9.util.stream.Stream;
+import java9.util.stream.StreamSupport;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -218,12 +219,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             setHasOptionsMenu(true);
 
             BluetoothAdapter defaultAdapter = BluetoothAdapter.getDefaultAdapter();
-            List<BluetoothDevice> bluetoothDevices = defaultAdapter.getBondedDevices().stream().sorted(Comparator.comparing(BluetoothDevice::getName)).collect(Collectors.toList());
+            List<BluetoothDevice> bluetoothDevices = StreamSupport.stream(defaultAdapter.getBondedDevices()).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
             ListPreference deviceList = (ListPreference) findPreference(SettingsConstants.DEVICE_PREFERENCE);
             deviceList.setEnabled(deviceList != null);
             if (deviceList != null) {
-                CharSequence entries[] = bluetoothDevices.stream().map(BluetoothDevice::getName).toArray(String[]::new);
-                CharSequence entryValues[] = bluetoothDevices.stream().map(BluetoothDevice::getAddress).toArray(String[]::new);
+                CharSequence entries[] = StreamSupport.stream(bluetoothDevices).map(BluetoothDevice::getName).toArray(String[]::new);
+                CharSequence entryValues[] = StreamSupport.stream(bluetoothDevices).map(BluetoothDevice::getAddress).toArray(String[]::new);
                 deviceList.setEntries(entries);
                 deviceList.setEntryValues(entryValues);
             }
@@ -300,7 +301,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
             Pattern gmailPattern = Patterns.EMAIL_ADDRESS; // API level 8+
             Account[] accounts = AccountManager.get(getContext()).getAccounts();
-            String[] emails = Arrays.stream(accounts).map(account -> account.name).filter(name -> gmailPattern.matcher(name).matches()).toArray(String[]::new);
+            String[] emails = Stream.of(accounts).map(account -> account.name).filter(name -> gmailPattern.matcher(name).matches()).toArray(String[]::new);
             ListPreference emailList = (ListPreference) findPreference(SettingsConstants.EMAIL_PREFERENCE);
             if (emailList != null) {
                 emailList.setEntries(emails);
