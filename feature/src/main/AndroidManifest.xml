@@ -91,21 +91,6 @@
             android:value="ca-app-pub-4570438640386834~2903182202"/>
 
         <activity
-            android:name=".activities.MapsActivity"
-            android:label="@string/title_activity_maps">
-            <intent-filter android:order="1">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.BROWSABLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data
-                    android:host="securityalarm.romif.com"
-                    android:path="/map"
-                    android:scheme="https" />
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".activities.SettingsActivity"
             android:label="@string/title_activity_settings"
             android:parentActivityName=".activities.ContentActivity">
