@@ -39,8 +39,13 @@ public class BlueToothReceiver extends BroadcastReceiver {
 
         Log.d("BlueToothReceiver", "device " + device.getName());
 
-        CompletableFuture<String> loginFuture = SecurityService.getCredential(context)
-                .thenCompose(credential -> WialonService.login(wialonHost, credential.getId(), credential.getPassword()))
+        boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
+        CompletableFuture<String> tokenFuture = useSmartLock ? SecurityService.getCredential(context)
+                .thenCompose(credential -> WialonService.getToken(wialonHost, credential.getId(), credential.getPassword(), true)) :
+                CompletableFuture.completedFuture(sharedPref.getString(SettingsConstants.TOKEN, ""));
+
+        CompletableFuture<String> loginFuture = tokenFuture
+                .thenCompose(token -> WialonService.login(wialonHost, token))
                 .handle((aVoid, throwable) -> {
                     if (throwable == null || throwable.getCause() == null) {
                         return aVoid;

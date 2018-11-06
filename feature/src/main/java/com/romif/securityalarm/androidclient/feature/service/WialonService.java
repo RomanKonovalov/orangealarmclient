@@ -15,6 +15,7 @@ import com.wialon.remote.RemoteHttpClient;
 import com.wialon.remote.handlers.ResponseHandler;
 import com.wialon.remote.handlers.SearchResponseHandler;
 
+import org.apache.http.Header;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntityHC4;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -39,7 +40,7 @@ public class WialonService {
     private static final String TAG = "WialonService";
     private static Session session;
 
-    public static CompletableFuture<String> login(String baseUrl, String login, String password) {
+    public static CompletableFuture<String> getToken(String baseUrl, String login, String password, boolean useSmartLock) {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -47,7 +48,8 @@ public class WialonService {
                 nameValuePairs.add(new BasicNameValuePair("access_type", "-1"));
                 nameValuePairs.add(new BasicNameValuePair("response_type", "token"));
                 nameValuePairs.add(new BasicNameValuePair("activation_time", "0"));
-                nameValuePairs.add(new BasicNameValuePair("duration", "60"));
+                String duration = useSmartLock ? "60" : "0";
+                nameValuePairs.add(new BasicNameValuePair("duration", duration));
                 nameValuePairs.add(new BasicNameValuePair("flags", "7"));
                 nameValuePairs.add(new BasicNameValuePair("login", login));
                 nameValuePairs.add(new BasicNameValuePair("passw", password));
@@ -59,7 +61,11 @@ public class WialonService {
                 request.setEntity(httpEntity);
 
                 CloseableHttpResponse response = httpClient.execute(request);
-                String location = response.getHeaders("location")[0].getValue();
+                Header[] locations = response.getHeaders("location");
+                if (locations.length == 0) {
+                    throw new InvalidCredentialsException();
+                }
+                String location = locations[0].getValue();
                 Uri uri = Uri.parse(location);
                 String accessToken = uri.getQueryParameter("access_token");
                 String userName = uri.getQueryParameter("user_name");
@@ -71,21 +77,25 @@ public class WialonService {
                 Log.e(TAG, "Error while getting token", e);
                 throw new RuntimeException(e);
             }
-        }).thenCompose(token -> loginWithToken(baseUrl, token));
+        });
 
     }
 
-    private static CompletableFuture<String> loginWithToken(String baseUrl, String token) {
+    public static CompletableFuture<String> login(String baseUrl, String token) {
         CompletableFuture<String> future = new CompletableFuture<>();
+        if (token == null || token.isEmpty()) {
+            future.completeExceptionally(new InvalidCredentialsException());
+            return future;
+        }
         // initialize Wialon session
         session = Session.getInstance();
         session.initSession(baseUrl);
-        // trying login
+        // trying getToken
         session.loginToken(token, new ResponseHandler() {
             @Override
             public void onSuccess(String response) {
                 super.onSuccess(response);
-                // login succeed
+                // getToken succeed
                 Log.i(TAG, String.format("Logged successfully. User name is %s", session.getCurrUser().getName()));
                 future.complete(session.getCurrUser().getName());
             }
@@ -93,7 +103,7 @@ public class WialonService {
             @Override
             public void onFailure(int errorCode, Throwable throwableError) {
                 super.onFailure(errorCode, throwableError);
-                // login failed, print error
+                // getToken failed, print error
                 Log.e(TAG, Errors.getErrorText(errorCode));
                 if (errorCode == 8) {
                     future.completeExceptionally(new InvalidCredentialsException());
@@ -463,7 +473,7 @@ public class WialonService {
 }
 
 /*Session.getInstance().initSession(properties.getProperty("wialon.host"));
-            Session.getInstance().login(credential.getId(), credential.getPassword(), new ResponseHandler() {
+            Session.getInstance().getToken(credential.getId(), credential.getPassword(), new ResponseHandler() {
                 @Override
                 public void onSuccess(String response) {
                     super.onSuccess(response);

@@ -19,6 +19,9 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.github.zagum.switchicon.SwitchIconView;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -51,6 +54,7 @@ public class ContentActivity extends AppCompatActivity {
     private Handler handler;
     private MenuItem refreshButton;
     private View progressBar;
+    private AdView mAdView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,11 +85,17 @@ public class ContentActivity extends AppCompatActivity {
                     setMap();
                     alarmToggle.setIconEnabled(getUnit() != null && getUnit().isAlarmEnabled(), true);
                     Toast.makeText(ContentActivity.this, getUnit() != null && getUnit().isAlarmEnabled() ? R.string.alarm_acivated : R.string.alarm_deactivated, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(ContentActivity.this, R.string.error_change_state, Toast.LENGTH_SHORT).show();
                 }
             }
         };
+
+        MobileAds.initialize(this, "ca-app-pub-4570438640386834~2903182202");
+
+        mAdView = findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder()
+                .addTestDevice("72332931F4D92E53CC1AB3E0F646F3A3")
+                .build();
+        mAdView.loadAd(adRequest);
 
     }
 
@@ -121,8 +131,12 @@ public class ContentActivity extends AppCompatActivity {
             String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
             String email = sharedPref.getString(SettingsConstants.EMAIL_PREFERENCE, "");
             String geozoneName = sharedPref.getString(SettingsConstants.GEOZONE_NAME_PREFERENCE, getString(R.string.geozone_name));
-            CompletableFuture<String> future = SecurityService.getCredential(this)
-                    .thenCompose(credential -> WialonService.login(wialonHost, credential.getId(), credential.getPassword()))
+            boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
+            CompletableFuture<String> tokenFuture = useSmartLock ? SecurityService.getCredential(this)
+                    .thenCompose(credential -> WialonService.getToken(wialonHost, credential.getId(), credential.getPassword(), true)) :
+                    CompletableFuture.completedFuture(sharedPref.getString(SettingsConstants.TOKEN, ""));
+            CompletableFuture<String> future = tokenFuture
+                    .thenCompose(token -> WialonService.login(wialonHost, token))
                     .handle((aVoid, throwable) -> {
                         if (throwable == null || throwable.getCause() == null) {
                             return aVoid;
@@ -179,6 +193,7 @@ public class ContentActivity extends AppCompatActivity {
                         WialonService.logout();
                         if (throwable != null) {
                             Log.e(TAG, "Unable to change state", throwable);
+                            Toast.makeText(ContentActivity.this, R.string.error_change_state, Toast.LENGTH_SHORT).show();
                             handler.sendEmptyMessage(-1);
                         } else {
                             handler.sendEmptyMessage(1);
@@ -213,11 +228,15 @@ public class ContentActivity extends AppCompatActivity {
 
         String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
         long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
-        SecurityService.getCredential(this)
-                .thenCompose(credential -> WialonService.login(wialonHost, credential.getId(), credential.getPassword()))
+        boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
+        CompletableFuture<String> tokenFuture = useSmartLock ? SecurityService.getCredential(this)
+                .thenCompose(credential -> WialonService.getToken(wialonHost, credential.getId(), credential.getPassword(), true)) :
+                CompletableFuture.completedFuture(sharedPref.getString(SettingsConstants.TOKEN, ""));
+        tokenFuture
+                .thenCompose(token -> WialonService.login(wialonHost, token))
                 .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
                 .thenAccept(units -> {
-                    Log.d(TAG, "login and units are retrieved");
+                    Log.d(TAG, "units are retrieved");
                     putUnits(units);
                     SharedPreferences.Editor sharedPrefEditor = android.preference.PreferenceManager.getDefaultSharedPreferences(this).edit();
                     sharedPrefEditor.putStringSet(SettingsConstants.UNIT_NAMES, new HashSet<>(units.stream().map(UnitDto::getName).collect(Collectors.toSet())));

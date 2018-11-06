@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private CredentialsClient mCredentialsClient;
     private AlertDialog enableNotificationListenerAlertDialog;
+    private SharedPreferences sharedPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
             mIsResolving = savedInstanceState.getBoolean(IS_RESOLVING);
             mIsRequesting = savedInstanceState.getBoolean(IS_REQUESTING);
         }
+
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 
         /*if (!NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName())) {        //ask for permission
             Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
@@ -122,7 +125,9 @@ public class MainActivity extends AppCompatActivity {
                         Log.e(TAG, "Credentials not retrieved", e);
                         mIsRequesting = false;
                         Toast.makeText(this, R.string.error_credentials_retrieve, Toast.LENGTH_SHORT).show();
-                        new Handler().postDelayed(this::finishAndRemoveTask, 2000);
+                        getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.fragment_container, new SignInFragment())
+                                .commit();
                     }
                     return aVoid;
                 });
@@ -139,11 +144,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void saveCredential(Credential credential, String login, ArrayList<UnitDto> units) {
+        boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
+
+        if (!useSmartLock) {
+            Intent intent = new Intent(MainActivity.this, ContentActivity.class);
+            intent.putExtra("com.romif.securityalarm.androidclient.Units", units);
+            startActivity(intent);
+            finish();
+            mIsResolving = false;
+            return;
+        }
 
         mCredentialsClient.save(credential).addOnCompleteListener(
                 task -> {
                     Intent intent = new Intent(MainActivity.this, ContentActivity.class);
-                    intent.putExtra("login", login);
                     intent.putExtra("com.romif.securityalarm.androidclient.Units", units);
                     startActivity(intent);
                     finish();
@@ -161,9 +175,8 @@ public class MainActivity extends AppCompatActivity {
                         resolveResult(rae, RC_SAVE);
                     } else {
                         // Request has no resolution
-                        Toast.makeText(this, e != null ? e.getLocalizedMessage() : getString(R.string.error_credentials_retrieve), Toast.LENGTH_LONG).show();
-                        Log.e(TAG, "Attempt to save credential failed ");
-                        new Handler().postDelayed(this::finishAndRemoveTask, 5000);
+                        Toast.makeText(this, R.string.error_save_credentials, Toast.LENGTH_LONG).show();
+                        Log.e(TAG, "Attempt to save credential failed", e);
                     }
                 });
 
@@ -217,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
 
     private CompletableFuture<String> processRetrievedCredential(Credential credential) {
         Log.d(TAG, "Process Retrieved Credential");
-        StringBuilder loginBuilder = new StringBuilder();
+        boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String wialonHost = sharedPref.getString(SettingsConstants.WIALON_HOST_PREFERENCE, getString(R.string.wialon_host));
         final Handler handler = new Handler() {
@@ -231,13 +244,14 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, ContentActivity.class);
         String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
         long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
-        return WialonService.login(wialonHost, credential.getId(), credential.getPassword())
-                .thenAccept(loginBuilder::append)
+        CompletableFuture<String> tokenFuture = useSmartLock ? WialonService.getToken(wialonHost, credential.getId(), credential.getPassword(), true) :
+                CompletableFuture.completedFuture(sharedPref.getString(SettingsConstants.TOKEN, ""));
+        return tokenFuture
+                .thenCompose(token -> WialonService.login(wialonHost, token))
                 .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
                 .thenAccept(units -> {
-                    Log.d(TAG, "login and units are retrieved");
+                    Log.d(TAG, "units are retrieved");
                     mIsRequesting = false;
-                    intent.putExtra("login", loginBuilder.toString());
                     intent.putExtra("com.romif.securityalarm.androidclient.Units", new ArrayList<>(units));
                     startActivity(intent);
                     finish();

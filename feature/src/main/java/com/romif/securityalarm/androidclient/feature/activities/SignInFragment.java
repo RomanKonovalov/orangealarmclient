@@ -85,7 +85,18 @@ public class SignInFragment extends Fragment {
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
             String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, getString(R.string.notification_name));
             long unitId = Long.parseLong(sharedPref.getString(SettingsConstants.UNIT_PREFERENCE, "0"));
-            WialonService.login((String) properties.get("wialon.host"), username, password)
+            boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
+            String wialonHost = sharedPref.getString(SettingsConstants.WIALON_HOST_PREFERENCE, getString(R.string.wialon_host));
+            WialonService.getToken(wialonHost, username, password, useSmartLock)
+                    .thenApply(token -> {
+                        if (!useSmartLock) {
+                            SharedPreferences.Editor sharedPrefEditor = android.preference.PreferenceManager.getDefaultSharedPreferences(getContext()).edit();
+                            sharedPrefEditor.putString(SettingsConstants.TOKEN, token);
+                            sharedPrefEditor.apply();
+                        }
+                        return token;
+                    })
+                    .thenCompose(token -> WialonService.login(wialonHost, token))
                     .thenAccept(loginBuilder::append)
                     .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId))
                     .thenAccept(units -> {

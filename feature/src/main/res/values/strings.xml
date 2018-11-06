@@ -35,7 +35,7 @@
     <string name="wialon_host_title">Orange host</string>
     <string name="pref_title_enable_bt_auto_switching">Bluetooth alarm switching</string>
     <string name="pref_description_enable_bt_auto_switching">Activate/deactivate alarm on connecting/disconnecting to selected device</string>
-    <string name="error_credentials_retrieve">Unable to retrieve credentials. Try again later</string>
+    <string name="error_credentials_retrieve">Unable to retrieve credentials. Try enter login and password</string>
     <string name="error_data_retrieve">Unable to retrieve data from Orange. Try again later</string>
     <string name="pref_header_advanced">Advanced</string>
     <string name="geozone_name_title">Geozone name</string>
@@ -49,8 +49,11 @@
     <string name="geozone_color_summary">Change geozone color</string>
     <string name="pref_title_geozone_escape_notification">Geozone escape notification</string>
     <string name="pref_title_notification_listener_settings">Notification listener settings</string>
-    <string name="error_refresh_state">Unable to refresh state. Please try again later</string>
+    <string name="error_refresh_state">Unable to refresh state. Please logout and try again</string>
     <string name="alarm_acivated">Alarm Acivated</string>
     <string name="alarm_deactivated">Alarm Deactivated</string>
-    <string name="error_change_state">Unable to change state. Please try again later</string>
+    <string name="error_change_state">Unable to change state. Please logout and try again</string>
+    <string name="error_save_credentials">Unable to save credentials</string>
+    <string name="pref_title_enable_smart_lock">Use Smart Lock</string>
+    <string name="pref_description_enable_smart_lock">Use Smart Lock to save credentials</string>
 </resources>
