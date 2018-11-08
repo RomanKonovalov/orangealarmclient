@@ -7,15 +7,19 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 
 import com.romif.securityalarm.androidclient.feature.AlarmState;
-import com.romif.securityalarm.androidclient.feature.activities.MainActivity;
 import com.romif.securityalarm.androidclient.feature.R;
+import com.romif.securityalarm.androidclient.feature.SettingsConstants;
+import com.romif.securityalarm.androidclient.feature.activities.MainActivity;
 
 /**
  * Helper class for showing and canceling alarm
@@ -58,6 +62,8 @@ public class NotificationService {
         // TODO: Remove this if your notification has no relevant thumbnail.
 
         final String title = res.getString(R.string.alarm_notification_title_template);
+
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
 
         String text = "";
         switch (alarmState) {
@@ -153,8 +159,14 @@ public class NotificationService {
                         null)*/
 
                 // Automatically dismiss the notification when it is touched.
-                .setAutoCancel(true);
-
+                .setAutoCancel(true)
+                .setContentIntent(
+                        PendingIntent.getActivity(
+                                context,
+                                0,
+                                new Intent(context, MainActivity.class),
+                                PendingIntent.FLAG_UPDATE_CURRENT));
+        String ringtoneUri = sharedPref.getString(SettingsConstants.RINGTONE_NOTIFICATION_PREFERENCE, "content://settings/system/notification_sound");
         switch (alarmState) {
             case PAUSED:
                 builder.setSmallIcon(R.drawable.ic_alarm_paused);
@@ -165,21 +177,18 @@ public class NotificationService {
             case PAUSE_EXCEPTION:
             case RESUME_EXCEPTION:
             case INCORRECT_CREDENTIALS:
+            case ZONE_ESCAPE:
                 builder
-                        .setSmallIcon(R.drawable.ic_alarm_error)
-                        .setContentIntent(
-                                PendingIntent.getActivity(
-                                        context,
-                                        0,
-                                        new Intent(context, MainActivity.class),
-                                        PendingIntent.FLAG_UPDATE_CURRENT));
+                        .setSmallIcon(R.drawable.ic_alarm_error);
 
                 break;
         }
 
         if (AlarmState.ZONE_ESCAPE == alarmState) {
-            builder.setVibrate(new long[]{1000, 1000, 1000, 1000, 1000});
+            builder.setVibrate(new long[]{500,1000});
             builder.setLights(Color.RED, 3000, 3000);
+            builder.setSound(Uri.parse(ringtoneUri));
+            builder.setPriority(NotificationCompat.PRIORITY_MAX);
         }
 
         createNotificationChannel(context);

@@ -311,6 +311,7 @@ public class ContentActivity extends AppCompatActivity {
         int i = item.getItemId();
         if (i == R.id.menu_refresh) {
             refreshState();
+            //NotificationService.notify(getApplicationContext(), AlarmState.ZONE_ESCAPE, 333);
             return true;
         } else if (i == R.id.menu_settings) {// Here we would open up our settings activity
             Intent intent = new Intent(this, SettingsActivity.class);
