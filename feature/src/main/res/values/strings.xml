@@ -54,4 +54,6 @@
     <string name="error_save_credentials">Unable to save credentials</string>
     <string name="pref_title_enable_smart_lock">Use Smart Lock</string>
     <string name="pref_description_enable_smart_lock">Use Smart Lock to save credentials</string>
+    <string name="error_notification_permissions">Notification permissions are not allowed. Please config.</string>
+    <string name="admob_banner_ad_unit_id">ca-app-pub-4570438640386834/3168821802</string>
 </resources>

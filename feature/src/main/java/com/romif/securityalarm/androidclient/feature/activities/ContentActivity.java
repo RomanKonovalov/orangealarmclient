@@ -9,6 +9,9 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
@@ -19,9 +22,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.github.zagum.switchicon.SwitchIconView;
-import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -92,14 +93,15 @@ public class ContentActivity extends AppCompatActivity {
             }
         };
 
-        MobileAds.initialize(this, "ca-app-pub-4570438640386834~2903182202");
+        boolean geozoneEscapeNotification = sharedPref.getBoolean(SettingsConstants.GEOZONE_ESCAPE_NOTIFICATION_PREFERENCE, true);
+        if (geozoneEscapeNotification && !NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName())) {
+            Toast.makeText(this, R.string.error_notification_permissions, Toast.LENGTH_LONG).show();
+        }
 
-        mAdView = findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder()
-                .addTestDevice("72332931F4D92E53CC1AB3E0F646F3A3")
-                .build();
-        mAdView.loadAd(adRequest);
-
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction trans = fragmentManager.beginTransaction();
+        trans.replace(R.id.adContainer, new AdMobFragment());
+        trans.commit();
     }
 
     @Override

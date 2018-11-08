@@ -15,19 +15,6 @@
         android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
-
-    <com.google.android.gms.ads.AdView
-        android:id="@+id/adView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:visibility="visible"
-        app:adSize="BANNER"
-        app:adUnitId="ca-app-pub-4570438640386834/3168821802"/>
-
-
-
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -47,8 +34,6 @@
                 android:layout_height="match_parent"
                 map:cameraZoom="15" />
 
-
-
         </RelativeLayout>
 
         <ProgressBar
@@ -58,6 +43,12 @@
             android:layout_centerInParent="true"
             android:visibility="gone" />
 
+        <FrameLayout
+            android:id="@+id/adContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true" />
 
     </RelativeLayout>
 
