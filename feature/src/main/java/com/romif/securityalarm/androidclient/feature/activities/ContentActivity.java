@@ -1,6 +1,7 @@
 package com.romif.securityalarm.androidclient.feature.activities;
 
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -24,6 +25,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.crashlytics.android.Crashlytics;
 import com.github.zagum.switchicon.SwitchIconView;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -32,6 +34,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.dto.UnitDto;
@@ -53,7 +56,6 @@ import java9.util.stream.StreamSupport;
 public class ContentActivity extends AppCompatActivity {
 
     private static final String TAG = "ContentActivity";
-    private static final int REQUEST_ENABLE_BT = 111;
     private MapFragment mapFragment;
     private SharedPreferences sharedPref;
     private SwitchIconView alarmToggle;
@@ -61,6 +63,7 @@ public class ContentActivity extends AppCompatActivity {
     private MenuItem refreshButton;
     private View progressBar;
     private DrawerLayout mDrawerLayout;
+    private FirebaseAnalytics mFirebaseAnalytics;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,10 +92,12 @@ public class ContentActivity extends AppCompatActivity {
                     int i = menuItem.getItemId();
 
                     if (i == R.id.menu_settings) {// Here we would open up our settings activity
+                        log(Log.INFO, "menu_settings", "begin");
                         Intent intent = new Intent(this, SettingsActivity.class);
                         startActivity(intent);
                         return false;
                     } else if (i == R.id.menu_logout) {
+                        log(Log.INFO, "menu_logout", "begin");
                         SecurityService.logout(this);
                         Intent intent = new Intent(this, MainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -119,6 +124,7 @@ public class ContentActivity extends AppCompatActivity {
                 refreshButton.setEnabled(true);
                 alarmToggle.setEnabled(true);
                 if (msg.what > 0) {
+                    log(Log.INFO, "handler", "success");
                     setMap();
                     alarmToggle.setIconEnabled(getUnit() != null && getUnit().isAlarmEnabled(), true);
                     Toast.makeText(ContentActivity.this, getUnit() != null && getUnit().isAlarmEnabled() ? R.string.alarm_acivated : R.string.alarm_deactivated, Toast.LENGTH_SHORT).show();
@@ -131,10 +137,18 @@ public class ContentActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.error_notification_permissions, Toast.LENGTH_LONG).show();
         }
 
+        boolean btAutoSwitching = sharedPref.getBoolean(SettingsConstants.BT_AUTO_SWITCHING_PREFERENCE, true);
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (btAutoSwitching && !bluetoothAdapter.isEnabled()) {
+            Toast.makeText(this, R.string.error_bluetooth_off, Toast.LENGTH_LONG).show();
+        }
+
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction trans = fragmentManager.beginTransaction();
         trans.replace(R.id.adContainer, new AdMobFragment());
         trans.commit();
+
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
     }
 
     @Override
@@ -152,6 +166,7 @@ public class ContentActivity extends AppCompatActivity {
 
         alarmToggle.setIconEnabled(getUnit() != null && getUnit().isAlarmEnabled());
         alarmToggle.setOnClickListener(v -> {
+            log(Log.INFO, "alarm_toggle", "begin");
             boolean isChecked = alarmToggle.isIconEnabled();
             progressBar.setVisibility(View.VISIBLE);
             refreshButton.setEnabled(false);
@@ -167,14 +182,7 @@ public class ContentActivity extends AppCompatActivity {
                     .thenCompose(credential -> WialonService.getToken(wialonHost, credential.getId(), credential.getPassword(), true)) :
                     CompletableFuture.completedFuture(sharedPref.getString(SettingsConstants.TOKEN, ""));
             CompletableFuture<String> future = tokenFuture
-                    .thenCompose(token -> WialonService.login(wialonHost, token))
-                    .handle((aVoid, throwable) -> {
-                        if (throwable == null || throwable.getCause() == null) {
-                            return aVoid;
-                        }
-                        Throwable e = throwable.getCause();
-                        return aVoid;
-                    });
+                    .thenCompose(token -> WialonService.login(wialonHost, token));
             CompletableFuture<Boolean> futureUpdateNotification;
             if (!isChecked) {
                 futureUpdateNotification = future
@@ -218,12 +226,14 @@ public class ContentActivity extends AppCompatActivity {
                     .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId, geozoneName))
                     .thenAccept(units -> {
                         Log.d(TAG, "Units are retrieved");
+                        log(Log.INFO, "alarm_toggle", "units are retrieved");
                         putUnits(units);
                     })
                     .handle((o, throwable) -> {
                         WialonService.logout();
                         if (throwable != null) {
                             Log.e(TAG, "Unable to change state", throwable);
+                            log("alarm_toggle", throwable);
                             Toast.makeText(ContentActivity.this, R.string.error_change_state, Toast.LENGTH_SHORT).show();
                             handler.sendEmptyMessage(-1);
                         } else {
@@ -247,9 +257,13 @@ public class ContentActivity extends AppCompatActivity {
     }
 
     private void refreshState() {
+
+        log(Log.INFO, "refresh_state", "begin");
+
         String wialonHost = sharedPref.getString(SettingsConstants.WIALON_HOST_PREFERENCE, getString(R.string.wialon_host));
         if (Objects.equals(wialonHost, "")) {
-            Toast.makeText(this, "Orange host is not set", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_host_not_set, Toast.LENGTH_SHORT).show();
+            log(Log.ERROR, "refresh_state", "error_host_not_set");
             return;
         }
         mapFragment.getMapAsync(GoogleMap::clear);
@@ -269,6 +283,7 @@ public class ContentActivity extends AppCompatActivity {
                 .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId, geozoneName))
                 .thenAccept(units -> {
                     Log.d(TAG, "units are retrieved");
+                    log(Log.INFO, "refresh_state", "units are retrieved");
                     putUnits(units);
                     SharedPreferences.Editor sharedPrefEditor = android.preference.PreferenceManager.getDefaultSharedPreferences(this).edit();
                     sharedPrefEditor.putStringSet(SettingsConstants.UNIT_NAMES, new HashSet<>(StreamSupport.stream(units).map(UnitDto::getName).collect(Collectors.toSet())));
@@ -280,6 +295,7 @@ public class ContentActivity extends AppCompatActivity {
                 .handle((s, throwable) -> {
                     if (throwable != null) {
                         Log.e(TAG, "Unable to refresh state", throwable);
+                        log("refresh_state", throwable);
                         Toast.makeText(this, R.string.error_refresh_state, Toast.LENGTH_SHORT).show();
                         handler.sendEmptyMessage(-1);
                     }
@@ -290,24 +306,6 @@ public class ContentActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-
-        /*BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (!bluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        }*/
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REQUEST_ENABLE_BT) {
-
-            if (resultCode != RESULT_OK) {
-                Toast.makeText(this, "Bluetooth is not available. App will not work properly. Please turn it on", Toast.LENGTH_SHORT).show();
-            }
-        }
     }
 
     private void setMap() {
@@ -364,6 +362,21 @@ public class ContentActivity extends AppCompatActivity {
                 .filter(u -> u.getId() == unitId)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private void log(int priority, String event, String status) {
+        Bundle params = new Bundle();
+        params.putString("activity", TAG);
+        params.putString("status", status);
+        mFirebaseAnalytics.logEvent(event, params);
+        Crashlytics.log(priority, TAG, event + ": status " + status);
+    }
+
+    private void log(String event, Throwable throwable) {
+        Bundle params = new Bundle();
+        params.putString("error", throwable.getLocalizedMessage());
+        mFirebaseAnalytics.logEvent(event, params);
+        Crashlytics.logException(throwable);
     }
 
 }

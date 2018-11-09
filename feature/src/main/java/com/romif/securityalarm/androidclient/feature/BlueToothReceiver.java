@@ -5,10 +5,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.romif.securityalarm.androidclient.feature.service.NotificationService;
 import com.romif.securityalarm.androidclient.feature.service.SecurityService;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
@@ -22,8 +25,12 @@ public class BlueToothReceiver extends BroadcastReceiver {
 
     private static final String TAG = "BlueToothReceiver";
 
+    private FirebaseAnalytics mFirebaseAnalytics;
+
     @Override
     public void onReceive(Context context, Intent intent) {
+
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
 
@@ -39,7 +46,9 @@ public class BlueToothReceiver extends BroadcastReceiver {
 
         String action = intent.getAction();
 
-        Log.d("BlueToothReceiver", "device " + device.getName());
+        Log.d(TAG, "device " + device.getName());
+
+        log(Log.INFO, "on_bluetooth_receive", "begin");
 
         boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
         CompletableFuture<String> tokenFuture = useSmartLock ? SecurityService.getCredential(context)
@@ -55,12 +64,15 @@ public class BlueToothReceiver extends BroadcastReceiver {
                     Throwable e = throwable.getCause();
                     if (e instanceof ResolvableApiException) {
                         NotificationService.notify(context, AlarmState.INCORRECT_CREDENTIALS, 333);
+                        log(Log.ERROR, "on_bluetooth_receive", "credentials_resolve_required");
                     }
                     return aVoid;
                 });
 
         String notificationName = sharedPref.getString(SettingsConstants.NOTIFICATION_NAME_PREFERENCE, context.getString(R.string.notification_name));
         if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
+
+            log(Log.INFO, "on_bluetooth_receive", "action_acl_connected");
 
             loginFuture
                     .thenCompose(result -> WialonService.getNotification())
@@ -70,16 +82,20 @@ public class BlueToothReceiver extends BroadcastReceiver {
 
                         if (throwable != null && throwable.getCause() instanceof WialonService.InvalidCredentialsException) {
                             NotificationService.notify(context, AlarmState.INCORRECT_CREDENTIALS, 333);
+                            log(Log.ERROR, "on_bluetooth_receive", "incorrect_credentials");
                         } else if (throwable != null) {
                             Log.e(TAG, "Error while pausing", throwable.getCause());
+                            log("on_bluetooth_receive", throwable.getCause() != null ? throwable.getCause() : throwable);
                             NotificationService.notify(context, AlarmState.PAUSE_EXCEPTION, 333, throwable.getCause());
                         } else {
                             NotificationService.notify(context, AlarmState.PAUSED, 333);
+                            log(Log.INFO, "on_bluetooth_receive", "alarm_paused");
                         }
 
                         return null;
                     });
         } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
+            log(Log.INFO, "on_bluetooth_receive", "action_acl_disconnected");
             String geozoneName = sharedPref.getString(SettingsConstants.GEOZONE_NAME_PREFERENCE, context.getString(R.string.geozone_name));
             loginFuture
                     .thenCompose(result -> WialonService.getGeozone(false))
@@ -118,11 +134,14 @@ public class BlueToothReceiver extends BroadcastReceiver {
 
                         if (throwable != null && throwable.getCause() instanceof WialonService.InvalidCredentialsException) {
                             NotificationService.notify(context, AlarmState.INCORRECT_CREDENTIALS, 333);
+                            log(Log.ERROR, "on_bluetooth_receive", "incorrect_credentials");
                         } else if (throwable != null) {
                             Log.e(TAG, "Error while resuming", throwable.getCause());
+                            log("on_bluetooth_receive", throwable.getCause() != null ? throwable.getCause() : throwable);
                             NotificationService.notify(context, AlarmState.RESUME_EXCEPTION, 333, throwable.getCause());
                         } else {
                             NotificationService.notify(context, AlarmState.RESUMED, 333);
+                            log(Log.INFO, "on_bluetooth_receive", "alarm_resumed");
                         }
 
                         return null;
@@ -130,6 +149,21 @@ public class BlueToothReceiver extends BroadcastReceiver {
         }
 
 
+    }
+
+    private void log(int priority, String event, String status) {
+        Bundle params = new Bundle();
+        params.putString("activity", TAG);
+        params.putString("status", status);
+        mFirebaseAnalytics.logEvent(event, params);
+        Crashlytics.log(priority, TAG, event + ": status " + status);
+    }
+
+    private void log(String event, Throwable throwable) {
+        Bundle params = new Bundle();
+        params.putString("error", throwable.getLocalizedMessage());
+        mFirebaseAnalytics.logEvent(event, params);
+        Crashlytics.logException(throwable);
     }
 
 }

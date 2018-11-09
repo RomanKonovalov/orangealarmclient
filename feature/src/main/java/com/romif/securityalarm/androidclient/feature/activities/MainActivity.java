@@ -12,11 +12,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.auth.api.credentials.Credential;
 import com.google.android.gms.auth.api.credentials.Credentials;
 import com.google.android.gms.auth.api.credentials.CredentialsClient;
 import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.dto.UnitDto;
@@ -40,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean mIsRequesting;
     private CredentialsClient mCredentialsClient;
     private SharedPreferences sharedPref;
+    private FirebaseAnalytics mFirebaseAnalytics;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
     }
 
@@ -85,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         Log.d(TAG, "onStart");
+        log(Log.INFO, "on_start", "begin");
 
         if (mIsRequesting || mIsResolving) {
             return;
@@ -103,12 +109,14 @@ public class MainActivity extends AppCompatActivity {
                     Throwable e = throwable.getCause();
                     if (e instanceof ResolvableApiException) {
                         Log.d(TAG, "Credential resolving");
+                        log(Log.INFO, "get_credential", "credential_resolving");
                         ResolvableApiException rae = (ResolvableApiException) e;
                         resolveResult(rae, RC_READ);
                         mIsResolving = true;
                         mIsRequesting = false;
                     } else {
                         Log.e(TAG, "Credentials not retrieved", e);
+                        log("get_credential", e);
                         mIsRequesting = false;
                         Toast.makeText(this, R.string.error_credentials_retrieve, Toast.LENGTH_SHORT).show();
                         getSupportFragmentManager().beginTransaction()
@@ -126,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
             mIsResolving = true;
         } catch (IntentSender.SendIntentException e) {
             Log.e(TAG, "Failed to send resolution.", e);
+            log("get_credential", e);
         }
     }
 
@@ -140,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
             mIsResolving = false;
             return;
         }
-
+        log(Log.INFO, "save_credential", "begin");
         mCredentialsClient.save(credential).addOnCompleteListener(
                 task -> {
                     Intent intent = new Intent(MainActivity.this, ContentActivity.class);
@@ -150,6 +159,7 @@ public class MainActivity extends AppCompatActivity {
                     mIsResolving = false;
                     if (task.isSuccessful()) {
                         Log.d(TAG, "Credential saved");
+                        log(Log.INFO, "save_credential", "success");
                         return;
                     }
 
@@ -161,6 +171,7 @@ public class MainActivity extends AppCompatActivity {
                         resolveResult(rae, RC_SAVE);
                     } else {
                         // Request has no resolution
+                        log(Log.ERROR, "save_credential", "error_save_credentials");
                         Toast.makeText(this, R.string.error_save_credentials, Toast.LENGTH_LONG).show();
                         Log.e(TAG, "Attempt to save credential failed", e);
                     }
@@ -169,10 +180,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void deleteCredential(Credential credential) {
+        log(Log.INFO, "delete_credential", "begin");
         mCredentialsClient.delete(credential).addOnCompleteListener(
                 task -> {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "Credential deleted");
+                        log(Log.INFO, "delete_credential", "success");
                         setSignInEnabled(true);
                         setTheme(R.style.AppTheme);
                         getSupportFragmentManager().beginTransaction()
@@ -207,6 +220,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Credential Save: OK");
             } else {
                 Log.e(TAG, "Credential Save Failed");
+                log(Log.ERROR, "save_credential", "failed");
                 Toast.makeText(this, R.string.error_credentials_retrieve, Toast.LENGTH_SHORT).show();
             }
         }
@@ -216,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
 
     private CompletableFuture<String> processRetrievedCredential(Credential credential) {
         Log.d(TAG, "Process Retrieved Credential");
+        log(Log.INFO, "process_retrieved_credential", "begin");
         boolean useSmartLock = sharedPref.getBoolean(SettingsConstants.USE_SMART_LOCK_PREFERENCE, true);
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String wialonHost = sharedPref.getString(SettingsConstants.WIALON_HOST_PREFERENCE, getString(R.string.wialon_host));
@@ -238,6 +253,7 @@ public class MainActivity extends AppCompatActivity {
                 .thenCompose(result -> WialonService.getUnitDtos(notificationName, unitId, geozoneName))
                 .thenAccept(units -> {
                     Log.d(TAG, "units are retrieved");
+                    log(Log.INFO, "process_retrieved_credential", "units_retrieved");
                     mIsRequesting = false;
                     intent.putExtra("com.romif.securityalarm.androidclient.Units", new ArrayList<>(units));
                     startActivity(intent);
@@ -251,14 +267,31 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (exception.getCause() instanceof WialonService.InvalidCredentialsException) {
                         Log.e(TAG, "Credentials are invalid. Username or password are incorrect.");
+                        log(Log.ERROR, "process_retrieved_credential", "invalid_credentials");
                         deleteCredential(credential);
                     } else {
                         Log.e(TAG, "Error while processing RetrievedCredential", exception);
+                        log("process_retrieved_credential", exception);
                         handler.sendEmptyMessage(-1);
                     }
 
                     return result;
                 });
+    }
+
+    private void log(int priority, String event, String status) {
+        Bundle params = new Bundle();
+        params.putString("activity", TAG);
+        params.putString("status", status);
+        mFirebaseAnalytics.logEvent(event, params);
+        Crashlytics.log(priority, TAG, event + ": status " + status);
+    }
+
+    private void log(String event, Throwable throwable) {
+        Bundle params = new Bundle();
+        params.putString("error", throwable.getLocalizedMessage());
+        mFirebaseAnalytics.logEvent(event, params);
+        Crashlytics.logException(throwable);
     }
 
 }
