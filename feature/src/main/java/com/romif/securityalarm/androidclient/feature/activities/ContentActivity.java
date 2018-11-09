@@ -1,7 +1,6 @@
 package com.romif.securityalarm.androidclient.feature.activities;
 
 
-import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -9,9 +8,13 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
@@ -22,7 +25,6 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.github.zagum.switchicon.SwitchIconView;
-import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -58,7 +60,7 @@ public class ContentActivity extends AppCompatActivity {
     private Handler handler;
     private MenuItem refreshButton;
     private View progressBar;
-    private AdView mAdView;
+    private DrawerLayout mDrawerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +72,37 @@ public class ContentActivity extends AppCompatActivity {
 
         Toolbar myToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(myToolbar);
+        ActionBar actionbar = getSupportActionBar();
+        actionbar.setDisplayHomeAsUpEnabled(true);
+        actionbar.setHomeAsUpIndicator(R.drawable.ic_menu);
+
+        mDrawerLayout = findViewById(R.id.drawer_layout);
+
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(
+                menuItem -> {
+                    // set item as selected to persist highlight
+                    menuItem.setChecked(false);
+                    // close drawer when item is tapped
+                    mDrawerLayout.closeDrawers();
+
+                    int i = menuItem.getItemId();
+
+                    if (i == R.id.menu_settings) {// Here we would open up our settings activity
+                        Intent intent = new Intent(this, SettingsActivity.class);
+                        startActivity(intent);
+                        return false;
+                    } else if (i == R.id.menu_logout) {
+                        SecurityService.logout(this);
+                        Intent intent = new Intent(this, MainActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        startActivity(intent);
+                        finish();
+                        return true;
+                    }
+
+                    return true;
+                });
 
         mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
 
@@ -108,13 +141,6 @@ public class ContentActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate our menu from the resources by using the menu inflater.
         getMenuInflater().inflate(R.menu.main, menu);
-        // It is also possible add items here. Use a generated id from
-        // resources (ids.xml) to ensure that all menu ids are distinct.
-        //MenuItem locationItem = menu.add(0, R.id.menu_location, 0, R.string.menu_location);
-        //locationItem.setIcon(R.drawable.ic_action_location);
-
-        // Need to use MenuItemCompat methods to call any action item related methods
-        //MenuItemCompat.setShowAsAction(locationItem, MenuItem.SHOW_AS_ACTION_IF_ROOM);
 
         refreshButton = menu.findItem(R.id.menu_refresh);
 
@@ -265,11 +291,11 @@ public class ContentActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        /*BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        }
+        }*/
     }
 
     @Override
@@ -291,7 +317,7 @@ public class ContentActivity extends AppCompatActivity {
             if (unitDto != null) {
                 googleMap.addMarker(new MarkerOptions()
                         .position(new LatLng(unitDto.getUnitLatitude(), unitDto.getUnitLongitude()))
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car_map))
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car_location))
                         .snippet(unitDto.getName())
                         .title(unitDto.getName()));
                 if (unitDto.isAlarmEnabled()) {
@@ -315,16 +341,8 @@ public class ContentActivity extends AppCompatActivity {
             refreshState();
             //NotificationService.notify(getApplicationContext(), AlarmState.ZONE_ESCAPE, 333);
             return true;
-        } else if (i == R.id.menu_settings) {// Here we would open up our settings activity
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
-            return true;
-        } else if (i == R.id.menu_logout) {
-            SecurityService.logout(this);
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            startActivity(intent);
-            finish();
+        } else if (i == android.R.id.home) {// Here we would open up our settings activity
+            mDrawerLayout.openDrawer(GravityCompat.START);
             return true;
         }
 

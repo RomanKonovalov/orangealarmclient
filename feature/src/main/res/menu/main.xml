@@ -2,11 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:support="http://schemas.android.com/apk/res-auto" >
 
-    <!--
-        Here we create an item, setting support:showAsAction to display the item as an action if
-        there's room on the compatible Action Bar.
-    -->
-
     <item
         android:id="@+id/menu_alarm_toggle"
         android:title="Alerts"
@@ -18,24 +13,5 @@
         android:icon="@drawable/ic_action_refresh"
         android:title="@string/menu_update_state"
         support:showAsAction="ifRoom"/>
-
-    <!-- Location item is added in onCreateOptionsMenu() -->
-
-    <!--
-        Here we set the settings item to always be in the overflow menu, by setting
-        support:showAsAction to never, so it is never displayed as an action item on the compatible
-        Action Bar.
-    -->
-    <item
-        android:id="@+id/menu_settings"
-        android:icon="@drawable/ic_action_settings"
-        android:title="@string/menu_settings"
-        support:showAsAction="never"/>
-
-    <item
-        android:id="@+id/menu_logout"
-        android:icon="@drawable/ic_action_settings"
-        android:title="@string/sign_out_button_text"
-        support:showAsAction="never"/>
 
 </menu>

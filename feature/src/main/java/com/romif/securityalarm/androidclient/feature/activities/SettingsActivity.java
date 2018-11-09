@@ -218,15 +218,18 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_general);
             setHasOptionsMenu(true);
 
-            BluetoothAdapter defaultAdapter = BluetoothAdapter.getDefaultAdapter();
-            List<BluetoothDevice> bluetoothDevices = StreamSupport.stream(defaultAdapter.getBondedDevices()).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
             ListPreference deviceList = (ListPreference) findPreference(SettingsConstants.DEVICE_PREFERENCE);
-            deviceList.setEnabled(deviceList != null);
-            if (deviceList != null) {
-                CharSequence entries[] = StreamSupport.stream(bluetoothDevices).map(BluetoothDevice::getName).toArray(String[]::new);
-                CharSequence entryValues[] = StreamSupport.stream(bluetoothDevices).map(BluetoothDevice::getAddress).toArray(String[]::new);
-                deviceList.setEntries(entries);
-                deviceList.setEntryValues(entryValues);
+            BluetoothAdapter defaultAdapter = BluetoothAdapter.getDefaultAdapter();
+            if (!defaultAdapter.isEnabled()) {
+                deviceList.setEnabled(false);
+            } else {
+                List<BluetoothDevice> bluetoothDevices = StreamSupport.stream(defaultAdapter.getBondedDevices()).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
+                if (deviceList != null) {
+                    CharSequence entries[] = StreamSupport.stream(bluetoothDevices).map(BluetoothDevice::getName).toArray(String[]::new);
+                    CharSequence entryValues[] = StreamSupport.stream(bluetoothDevices).map(BluetoothDevice::getAddress).toArray(String[]::new);
+                    deviceList.setEntries(entries);
+                    deviceList.setEntryValues(entryValues);
+                }
             }
 
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
@@ -238,10 +241,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 unitList.setEntryValues(unitIds);
             }
 
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
             bindPreferenceSummaryToValue(findPreference(SettingsConstants.DEVICE_PREFERENCE));
             bindPreferenceSummaryToValue(findPreference(SettingsConstants.UNIT_PREFERENCE));
         }
