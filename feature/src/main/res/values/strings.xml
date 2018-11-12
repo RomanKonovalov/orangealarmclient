@@ -48,8 +48,8 @@
     <string name="pref_title_geozone_escape_notification">Geozone escape notification</string>
     <string name="pref_title_notification_listener_settings">Notification listener settings</string>
     <string name="error_refresh_state">Unable to refresh state. Please logout and try again</string>
-    <string name="alarm_acivated">Alarm Acivated</string>
-    <string name="alarm_deactivated">Alarm Deactivated</string>
+    <string name="alarm_acivated">Alarm active</string>
+    <string name="alarm_deactivated">Alarm is off</string>
     <string name="error_change_state">Unable to change state. Please logout and try again</string>
     <string name="error_save_credentials">Unable to save credentials</string>
     <string name="pref_title_enable_smart_lock">Use Smart Lock</string>
@@ -58,4 +58,11 @@
     <string name="admob_banner_ad_unit_id">ca-app-pub-4570438640386834/3168821802</string>
     <string name="error_bluetooth_off">Bluetooth is off. Auto alarm switching will not work.</string>
     <string name="error_host_not_set">Orange host is not set</string>
+    <string name="channel_name_success_action">Success action notification</string>
+    <string name="channel_name_fail_action">Fail action notification</string>
+    <string name="channel_name_alarm">Alarm notification</string>
+    <string name="pref_title_notification_success_action_settings">Config success action notification</string>
+    <string name="pref_title_notification_fail_action_settings">Config fail action notification</string>
+    <string name="pref_title_notification_alarm_settings">Config alarm notification</string>
+    <string name="alarm_notification_text_unit_escape">Unit leaved geozone</string>
 </resources>

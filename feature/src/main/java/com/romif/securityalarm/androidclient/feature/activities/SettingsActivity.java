@@ -20,6 +20,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
+import android.provider.Settings;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.Toolbar;
@@ -32,6 +33,7 @@ import android.widget.LinearLayout;
 
 import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
+import com.romif.securityalarm.androidclient.feature.service.NotificationService;
 
 import java.util.Collections;
 import java.util.List;
@@ -290,7 +292,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      * This fragment shows notification preferences only. It is used when the
      * activity is showing a two-pane settings UI.
      */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class NotificationPreferenceFragment extends PreferenceFragment {
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -305,6 +306,36 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             if (emailList != null) {
                 emailList.setEntries(emails);
                 emailList.setEntryValues(emails);
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                findPreference("success_action_preference").setOnPreferenceClickListener(preference -> {
+                    Intent intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+                    intent.putExtra(Settings.EXTRA_CHANNEL_ID, NotificationService.CHANNEL_ID_SUCCESS_ACTION);
+                    startActivity(intent);
+                    return false;
+                });
+
+                findPreference("fail_action_preference").setOnPreferenceClickListener(preference -> {
+                    Intent intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+                    intent.putExtra(Settings.EXTRA_CHANNEL_ID, NotificationService.CHANNEL_ID_FAIL_ACTION);
+                    startActivity(intent);
+                    return false;
+                });
+
+                findPreference("alarm_preference").setOnPreferenceClickListener(preference -> {
+                    Intent intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+                    intent.putExtra(Settings.EXTRA_CHANNEL_ID, NotificationService.CHANNEL_ID_ALARM);
+                    startActivity(intent);
+                    return false;
+                });
+            } else {
+                findPreference("success_action_preference").setEnabled(false);
+                findPreference("fail_action_preference").setEnabled(false);
+                findPreference("alarm_preference").setEnabled(false);
             }
 
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences

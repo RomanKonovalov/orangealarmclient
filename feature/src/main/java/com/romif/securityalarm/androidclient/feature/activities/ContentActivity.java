@@ -35,9 +35,11 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.romif.securityalarm.androidclient.feature.AlarmState;
 import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.dto.UnitDto;
+import com.romif.securityalarm.androidclient.feature.service.NotificationService;
 import com.romif.securityalarm.androidclient.feature.service.SecurityService;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
@@ -128,6 +130,8 @@ public class ContentActivity extends AppCompatActivity {
                     setMap();
                     alarmToggle.setIconEnabled(getUnit() != null && getUnit().isAlarmEnabled(), true);
                     Toast.makeText(ContentActivity.this, getUnit() != null && getUnit().isAlarmEnabled() ? R.string.alarm_acivated : R.string.alarm_deactivated, Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(ContentActivity.this, R.string.error_refresh_state, Toast.LENGTH_SHORT).show();
                 }
             }
         };
@@ -234,7 +238,6 @@ public class ContentActivity extends AppCompatActivity {
                         if (throwable != null) {
                             Log.e(TAG, "Unable to change state", throwable);
                             log("alarm_toggle", throwable);
-                            Toast.makeText(ContentActivity.this, R.string.error_change_state, Toast.LENGTH_SHORT).show();
                             handler.sendEmptyMessage(-1);
                         } else {
                             handler.sendEmptyMessage(1);
@@ -296,7 +299,6 @@ public class ContentActivity extends AppCompatActivity {
                     if (throwable != null) {
                         Log.e(TAG, "Unable to refresh state", throwable);
                         log("refresh_state", throwable);
-                        Toast.makeText(this, R.string.error_refresh_state, Toast.LENGTH_SHORT).show();
                         handler.sendEmptyMessage(-1);
                     }
                     return s;
@@ -337,7 +339,7 @@ public class ContentActivity extends AppCompatActivity {
         int i = item.getItemId();
         if (i == R.id.menu_refresh) {
             refreshState();
-            //NotificationService.notify(getApplicationContext(), AlarmState.ZONE_ESCAPE, 333);
+            NotificationService.notify(getApplicationContext(), AlarmState.ZONE_ESCAPE, 1);
             return true;
         } else if (i == android.R.id.home) {// Here we would open up our settings activity
             mDrawerLayout.openDrawer(GravityCompat.START);

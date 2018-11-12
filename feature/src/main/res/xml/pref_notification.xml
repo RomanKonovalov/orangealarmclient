@@ -29,4 +29,19 @@
         <intent android:action="android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS" />
     </Preference>
 
+    <Preference
+        android:key="success_action_preference"
+        android:title="@string/pref_title_notification_success_action_settings">
+    </Preference>
+
+    <Preference
+        android:key="fail_action_preference"
+        android:title="@string/pref_title_notification_fail_action_settings">
+    </Preference>
+
+    <Preference
+        android:key="alarm_preference"
+        android:title="@string/pref_title_notification_alarm_settings">
+    </Preference>
+
 </PreferenceScreen>

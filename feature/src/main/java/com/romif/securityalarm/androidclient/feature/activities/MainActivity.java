@@ -22,6 +22,7 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import com.romif.securityalarm.androidclient.feature.R;
 import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.dto.UnitDto;
+import com.romif.securityalarm.androidclient.feature.service.NotificationService;
 import com.romif.securityalarm.androidclient.feature.service.SecurityService;
 import com.romif.securityalarm.androidclient.feature.service.WialonService;
 
@@ -61,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+
+        NotificationService.init(this);
 
     }
 

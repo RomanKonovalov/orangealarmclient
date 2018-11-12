@@ -5,11 +5,12 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
-import android.graphics.Color;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.preference.PreferenceManager;
@@ -18,7 +19,6 @@ import android.support.v4.app.NotificationManagerCompat;
 
 import com.romif.securityalarm.androidclient.feature.AlarmState;
 import com.romif.securityalarm.androidclient.feature.R;
-import com.romif.securityalarm.androidclient.feature.SettingsConstants;
 import com.romif.securityalarm.androidclient.feature.activities.MainActivity;
 
 /**
@@ -34,7 +34,24 @@ public class NotificationService {
      * The unique identifier for this type of notification.
      */
     private static final String NOTIFICATION_TAG = "Alarm";
-    private static final String CHANNEL_ID = "alarm_notification";
+    public static final String CHANNEL_ID_SUCCESS_ACTION = "notification_success_action";
+    public static final String CHANNEL_ID_FAIL_ACTION = "alarm_notification_fail_action";
+    public static final String CHANNEL_ID_ALARM = "notification_alarm";
+
+    public static void init(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
+            if (notificationManager.getNotificationChannel(CHANNEL_ID_SUCCESS_ACTION) == null) {
+                createNotificationChannel(context, CHANNEL_ID_SUCCESS_ACTION, AlarmState.PAUSED);
+            }
+            if (notificationManager.getNotificationChannel(CHANNEL_ID_FAIL_ACTION) == null) {
+                createNotificationChannel(context, CHANNEL_ID_FAIL_ACTION, AlarmState.PAUSE_EXCEPTION);
+            }
+            if (notificationManager.getNotificationChannel(CHANNEL_ID_ALARM) == null) {
+                createNotificationChannel(context, CHANNEL_ID_ALARM, AlarmState.ZONE_ESCAPE);
+            }
+        }
+    }
 
     public static void notify(final Context context, AlarmState alarmState, final int number) {
         notify(context, alarmState, number, null);
@@ -66,31 +83,38 @@ public class NotificationService {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
 
         String text = "";
+        String channelId = CHANNEL_ID_SUCCESS_ACTION;
         switch (alarmState) {
             case PAUSED:
                 text = res.getString(R.string.alarm_notification_text_alarm_paused);
+                channelId = CHANNEL_ID_SUCCESS_ACTION;
                 break;
             case RESUMED:
                 text = res.getString(R.string.alarm_notification_text_alarm_resumed);
+                channelId = CHANNEL_ID_SUCCESS_ACTION;
                 break;
             case INCORRECT_CREDENTIALS:
                 text = res.getString(R.string.alarm_notification_text_credential_incorrect);
+                channelId = CHANNEL_ID_FAIL_ACTION;
                 break;
             case PAUSE_EXCEPTION:
                 text = res.getString(R.string.alarm_notification_text_pause_exception, exception != null ? exception.getLocalizedMessage() : "");
+                channelId = CHANNEL_ID_FAIL_ACTION;
                 break;
 
             case RESUME_EXCEPTION:
                 text = res.getString(R.string.alarm_notification_text_resume_exception, exception != null ? exception.getLocalizedMessage() : "");
+                channelId = CHANNEL_ID_FAIL_ACTION;
                 break;
 
             case ZONE_ESCAPE:
-                text = res.getString(R.string.alarm_notification_text_alarm_paused);
+                text = res.getString(R.string.alarm_notification_text_unit_escape);
+                channelId = CHANNEL_ID_ALARM;
                 break;
         }
 
 
-        final NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+        final NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
 
                 // Set appropriate defaults for the notification light, sound,
                 // and vibration.
@@ -166,7 +190,6 @@ public class NotificationService {
                                 0,
                                 new Intent(context, MainActivity.class),
                                 PendingIntent.FLAG_UPDATE_CURRENT));
-        String ringtoneUri = sharedPref.getString(SettingsConstants.RINGTONE_NOTIFICATION_PREFERENCE, "content://settings/system/notification_sound");
         switch (alarmState) {
             case PAUSED:
                 builder.setSmallIcon(R.drawable.ic_alarm_paused);
@@ -178,33 +201,68 @@ public class NotificationService {
             case RESUME_EXCEPTION:
             case INCORRECT_CREDENTIALS:
             case ZONE_ESCAPE:
-                builder
-                        .setSmallIcon(R.drawable.ic_alarm_error);
-
+                builder.setSmallIcon(R.drawable.ic_alarm_error);
                 break;
         }
 
-        if (AlarmState.ZONE_ESCAPE == alarmState) {
-            builder.setVibrate(new long[]{500,1000});
-            builder.setLights(Color.RED, 3000, 3000);
-            builder.setSound(Uri.parse(ringtoneUri));
-            builder.setPriority(NotificationCompat.PRIORITY_MAX);
-        }
-
-        createNotificationChannel(context);
+        createNotificationChannel(context, channelId, alarmState);
 
         notify(context, builder);
     }
 
-    private static void createNotificationChannel(Context context) {
+    private static void createNotificationChannel(Context context, String channelId, AlarmState alarmState) {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = context.getString(R.string.channel_name);
-            String description = context.getString(R.string.channel_description);
+            CharSequence name = null;
+            String description = null;
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            Uri sound = null;
+            long[] vibrationPattern = null;
+            switch (alarmState) {
+                case PAUSED:
+                case RESUMED:
+                    name = context.getString(R.string.channel_name_success_action);
+                    description = context.getString(R.string.channel_name_success_action);
+                    sound = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.getPackageName() + "/" + R.raw.job_done);
+                    break;
+
+                case INCORRECT_CREDENTIALS:
+                case PAUSE_EXCEPTION:
+                case RESUME_EXCEPTION:
+                    name = context.getString(R.string.channel_name_fail_action);
+                    description = context.getString(R.string.channel_name_fail_action);
+                    importance = NotificationManager.IMPORTANCE_HIGH;
+                    sound = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.getPackageName() + "/" + R.raw.job_done);
+                    vibrationPattern = new long[]{500, 1000, 500, 1000, 500, 1000};
+                    break;
+
+                case ZONE_ESCAPE:
+                    name = context.getString(R.string.channel_name_alarm);
+                    description = context.getString(R.string.channel_name_alarm);
+                    importance = NotificationManager.IMPORTANCE_MAX;
+                    sound = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.getPackageName() + "/" + R.raw.job_done);
+                    vibrationPattern = new long[]{500, 1000, 500, 1000, 500, 1000};
+                    break;
+            }
+
+
+            NotificationChannel channel = new NotificationChannel(channelId, name, importance);
             channel.setDescription(description);
+
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build();
+
+            if (sound != null) {
+                channel.setSound(sound, audioAttributes);
+            }
+
+            if (vibrationPattern != null) {
+                channel.setVibrationPattern(vibrationPattern);
+            }
+
             // Register the channel with the system; you can't change the importance
             // or other notification behaviors after this
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
@@ -225,12 +283,7 @@ public class NotificationService {
      */
     @TargetApi(Build.VERSION_CODES.ECLAIR)
     public static void cancel(final Context context) {
-        final NotificationManager nm = (NotificationManager) context
-                .getSystemService(Context.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ECLAIR) {
-            nm.cancel(NOTIFICATION_TAG, 0);
-        } else {
-            nm.cancel(NOTIFICATION_TAG.hashCode());
-        }
+        final NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        nm.cancel(NOTIFICATION_TAG, 0);
     }
 }

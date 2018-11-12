@@ -1,7 +1,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <SwitchPreference
-        android:defaultValue="true"
+        android:defaultValue="false"
         android:key="use_smart_lock_preference"
         android:summary="@string/pref_description_enable_smart_lock"
         android:title="@string/pref_title_enable_smart_lock" />
